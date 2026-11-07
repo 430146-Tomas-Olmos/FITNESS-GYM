@@ -8,10 +8,10 @@ SET DATEFORMAT dmy
 GO
 
 -- ----------------------------------------------------------------------------
--- CREACION DE TABLAS 
+-- CREACION DE TABLAS - FITLIFENETWORKdb
 -- ----------------------------------------------------------------------------
 
--- 1. Tabla ROLES_SISTEMA (Renombrada para diferenciar de la de empleados)
+-- 1. Tabla ROLES_SISTEMA (Roles para el control de acceso del sistema web)
 CREATE TABLE ROLES_SISTEMA (
     id INT IDENTITY(1,1) NOT NULL,
     rol VARCHAR(50) NOT NULL,
@@ -20,7 +20,7 @@ CREATE TABLE ROLES_SISTEMA (
 );
 GO
 
--- 2. Tabla USUARIOS
+-- 2. Tabla USUARIOS (Autenticación web simplificada: usuario y contraseña)
 CREATE TABLE USUARIOS (
     id INT IDENTITY(1,1) NOT NULL,
     nombre VARCHAR(50) NOT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE USUARIOS (
 );
 GO
 
--- 3. Tabla ROLUSUARIO (Tabla relacional N:M)
+-- 3. Tabla ROLUSUARIO (Relación N:M entre usuarios y roles del sistema)
 CREATE TABLE ROLUSUARIO (
     idusuario INT NOT NULL,
     idrol INT NOT NULL,
@@ -38,8 +38,6 @@ CREATE TABLE ROLUSUARIO (
     CONSTRAINT FK_ROLUSUARIO_ROLES_SISTEMA FOREIGN KEY (idrol) REFERENCES ROLES_SISTEMA(id) ON DELETE CASCADE
 );
 GO
-
-
 
 CREATE TABLE PROVINCIAS (
     id_provincia INT IDENTITY(1,1) NOT NULL,
