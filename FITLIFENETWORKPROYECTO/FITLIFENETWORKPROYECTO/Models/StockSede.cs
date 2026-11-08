@@ -13,6 +13,8 @@ public partial class StockSede
 
     public int CantidadActual { get; set; }
 
+    public byte[] FilaVersion { get; set; } = null!;
+
     public virtual Producto IdProductoNavigation { get; set; } = null!;
 
     public virtual Sede IdSedeNavigation { get; set; } = null!;

@@ -19,11 +19,17 @@ public partial class Producto
 
     public virtual ICollection<DetalleComprasStock> DetalleComprasStocks { get; set; } = new List<DetalleComprasStock>();
 
+    public virtual ICollection<DetalleDevolucionesVentum> DetalleDevolucionesVenta { get; set; } = new List<DetalleDevolucionesVentum>();
+
+    public virtual ICollection<DetalleTransferencia> DetalleTransferencia { get; set; } = new List<DetalleTransferencia>();
+
     public virtual ICollection<DetalleVenta> DetalleVenta { get; set; } = new List<DetalleVenta>();
 
     public virtual ICollection<HistorialPreciosProducto> HistorialPreciosProductos { get; set; } = new List<HistorialPreciosProducto>();
 
     public virtual CategoriasProducto IdCategoriaNavigation { get; set; } = null!;
+
+    public virtual ICollection<MovimientosStock> MovimientosStocks { get; set; } = new List<MovimientosStock>();
 
     public virtual ICollection<StockSede> StockSedes { get; set; } = new List<StockSede>();
 }

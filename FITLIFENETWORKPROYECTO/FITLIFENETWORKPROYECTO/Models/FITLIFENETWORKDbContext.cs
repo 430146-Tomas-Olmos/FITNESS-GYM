@@ -21,11 +21,17 @@ public partial class FITLIFENETWORKDbContext : DbContext
 
     public virtual DbSet<AsistenciasClase> AsistenciasClases { get; set; }
 
+    public virtual DbSet<AuditoriaEquipamiento> AuditoriaEquipamientos { get; set; }
+
     public virtual DbSet<Barrio> Barrios { get; set; }
+
+    public virtual DbSet<Caja> Cajas { get; set; }
 
     public virtual DbSet<Calle> Calles { get; set; }
 
     public virtual DbSet<CategoriasProducto> CategoriasProductos { get; set; }
+
+    public virtual DbSet<CierresCaja> CierresCajas { get; set; }
 
     public virtual DbSet<Clase> Clases { get; set; }
 
@@ -39,9 +45,15 @@ public partial class FITLIFENETWORKDbContext : DbContext
 
     public virtual DbSet<DetalleComprasStock> DetalleComprasStocks { get; set; }
 
+    public virtual DbSet<DetalleDevolucionesVentum> DetalleDevolucionesVenta { get; set; }
+
     public virtual DbSet<DetalleRutina> DetalleRutinas { get; set; }
 
+    public virtual DbSet<DetalleTransferencia> DetalleTransferencias { get; set; }
+
     public virtual DbSet<DetalleVenta> DetalleVentas { get; set; }
+
+    public virtual DbSet<DevolucionesVentum> DevolucionesVenta { get; set; }
 
     public virtual DbSet<Disciplina> Disciplinas { get; set; }
 
@@ -79,6 +91,10 @@ public partial class FITLIFENETWORKDbContext : DbContext
 
     public virtual DbSet<MantenimientoEquipamiento> MantenimientoEquipamientos { get; set; }
 
+    public virtual DbSet<MovimientosStock> MovimientosStocks { get; set; }
+
+    public virtual DbSet<PagosCuota> PagosCuotas { get; set; }
+
     public virtual DbSet<Persona> Personas { get; set; }
 
     public virtual DbSet<Plane> Planes { get; set; }
@@ -111,19 +127,42 @@ public partial class FITLIFENETWORKDbContext : DbContext
 
     public virtual DbSet<StockSede> StockSedes { get; set; }
 
+    public virtual DbSet<TransferenciasStock> TransferenciasStocks { get; set; }
+
     public virtual DbSet<Turno> Turnos { get; set; }
 
     public virtual DbSet<Usuario> Usuarios { get; set; }
 
     public virtual DbSet<Venta> Ventas { get; set; }
 
+    public virtual DbSet<VwControlAptosMedico> VwControlAptosMedicos { get; set; }
+
+    public virtual DbSet<VwCostosMantenimientoEquipamiento> VwCostosMantenimientoEquipamientos { get; set; }
+
+    public virtual DbSet<VwCuotasPendiente> VwCuotasPendientes { get; set; }
+
+    public virtual DbSet<VwEstadoCuentaSocio> VwEstadoCuentaSocios { get; set; }
+
+    public virtual DbSet<VwIncidenciasActiva> VwIncidenciasActivas { get; set; }
+
+    public virtual DbSet<VwMembresiasVigente> VwMembresiasVigentes { get; set; }
+
+    public virtual DbSet<VwOcupacionClasesGrupale> VwOcupacionClasesGrupales { get; set; }
+
+    public virtual DbSet<VwRentabilidadConvenio> VwRentabilidadConvenios { get; set; }
+
+    public virtual DbSet<VwStockDisponiblePorSede> VwStockDisponiblePorSedes { get; set; }
+
+    public virtual DbSet<VwVentasDetalladasProducto> VwVentasDetalladasProductos { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         if (!optionsBuilder.IsConfigured)
         {
-            // Se deja vacío porque la cadena de conexión se administra desde Program.cs dice gpt, ni idea
+            // segun gpt asi se soluciona el error de conexion a la base de datos, pero no se si es correcto
         }
     }
+
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -204,6 +243,37 @@ public partial class FITLIFENETWORKDbContext : DbContext
                 .HasConstraintName("ASISTENCIAS_CLASES_x_RESERVAS");
         });
 
+        modelBuilder.Entity<AuditoriaEquipamiento>(entity =>
+        {
+            entity.HasKey(e => e.IdAuditoria);
+
+            entity.ToTable("AUDITORIA_EQUIPAMIENTO");
+
+            entity.Property(e => e.IdAuditoria).HasColumnName("id_auditoria");
+            entity.Property(e => e.EstadoAnterior)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("estado_anterior");
+            entity.Property(e => e.EstadoNuevo)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("estado_nuevo");
+            entity.Property(e => e.FechaCambio)
+                .HasDefaultValueSql("(getdate())", "DF_AUDITORIA_EQUIPO_FECHA")
+                .HasColumnType("datetime")
+                .HasColumnName("fecha_cambio");
+            entity.Property(e => e.IdEquipo).HasColumnName("id_equipo");
+            entity.Property(e => e.UsuarioSistema)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("usuario_sistema");
+
+            entity.HasOne(d => d.IdEquipoNavigation).WithMany(p => p.AuditoriaEquipamientos)
+                .HasForeignKey(d => d.IdEquipo)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_AUDITORIA_EQUIPAMIENTO_EQUIPO");
+        });
+
         modelBuilder.Entity<Barrio>(entity =>
         {
             entity.HasKey(e => e.IdBarrio);
@@ -221,6 +291,42 @@ public partial class FITLIFENETWORKDbContext : DbContext
                 .HasForeignKey(d => d.IdLocalidad)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("BARRIOS_x_LOCALIDADES");
+        });
+
+        modelBuilder.Entity<Caja>(entity =>
+        {
+            entity.HasKey(e => e.IdCaja);
+
+            entity.ToTable("CAJAS");
+
+            entity.Property(e => e.IdCaja).HasColumnName("id_caja");
+            entity.Property(e => e.Estado)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasDefaultValue("ABIERTA", "DF_CAJAS_ESTADO")
+                .HasColumnName("estado");
+            entity.Property(e => e.FechaApertura)
+                .HasDefaultValueSql("(getdate())", "DF_CAJAS_APERTURA")
+                .HasColumnType("datetime")
+                .HasColumnName("fecha_apertura");
+            entity.Property(e => e.FechaCierre)
+                .HasColumnType("datetime")
+                .HasColumnName("fecha_cierre");
+            entity.Property(e => e.IdEmpleado).HasColumnName("id_empleado");
+            entity.Property(e => e.IdSede).HasColumnName("id_sede");
+            entity.Property(e => e.SaldoInicial)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("saldo_inicial");
+
+            entity.HasOne(d => d.IdEmpleadoNavigation).WithMany(p => p.Cajas)
+                .HasForeignKey(d => d.IdEmpleado)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_CAJAS_EMPLEADOS");
+
+            entity.HasOne(d => d.IdSedeNavigation).WithMany(p => p.Cajas)
+                .HasForeignKey(d => d.IdSede)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_CAJAS_SEDES");
         });
 
         modelBuilder.Entity<Calle>(entity =>
@@ -254,6 +360,41 @@ public partial class FITLIFENETWORKDbContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("nombre_categoria");
+        });
+
+        modelBuilder.Entity<CierresCaja>(entity =>
+        {
+            entity.HasKey(e => e.IdCierre);
+
+            entity.ToTable("CIERRES_CAJA");
+
+            entity.Property(e => e.IdCierre).HasColumnName("id_cierre");
+            entity.Property(e => e.Diferencia)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("diferencia");
+            entity.Property(e => e.FechaCierre)
+                .HasDefaultValueSql("(getdate())", "DF_CIERRES_CAJA_FECHA")
+                .HasColumnType("datetime")
+                .HasColumnName("fecha_cierre");
+            entity.Property(e => e.IdCaja).HasColumnName("id_caja");
+            entity.Property(e => e.Observaciones)
+                .HasMaxLength(255)
+                .IsUnicode(false)
+                .HasColumnName("observaciones");
+            entity.Property(e => e.SaldoEsperado)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("saldo_esperado");
+            entity.Property(e => e.SaldoReal)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("saldo_real");
+            entity.Property(e => e.TotalVentas)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("total_ventas");
+
+            entity.HasOne(d => d.IdCajaNavigation).WithMany(p => p.CierresCajas)
+                .HasForeignKey(d => d.IdCaja)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_CIERRES_CAJA_CAJAS");
         });
 
         modelBuilder.Entity<Clase>(entity =>
@@ -324,6 +465,10 @@ public partial class FITLIFENETWORKDbContext : DbContext
                 .HasColumnName("estado_contrato");
             entity.Property(e => e.FechaInicio).HasColumnName("fecha_inicio");
             entity.Property(e => e.FechaVencimiento).HasColumnName("fecha_vencimiento");
+            entity.Property(e => e.FilaVersion)
+                .IsRowVersion()
+                .IsConcurrencyToken()
+                .HasColumnName("fila_version");
             entity.Property(e => e.IdPlan).HasColumnName("id_plan");
             entity.Property(e => e.IdSede).HasColumnName("id_sede");
             entity.Property(e => e.IdSocio).HasColumnName("id_socio");
@@ -379,6 +524,8 @@ public partial class FITLIFENETWORKDbContext : DbContext
 
             entity.ToTable("CUOTAS_COBROS");
 
+            entity.HasIndex(e => new { e.IdContrato, e.FechaVencimiento }, "IX_CUOTAS_CONTRATO_VENCIMIENTO");
+
             entity.Property(e => e.IdCobro).HasColumnName("id_cobro");
             entity.Property(e => e.FechaPago)
                 .HasColumnType("datetime")
@@ -427,6 +574,31 @@ public partial class FITLIFENETWORKDbContext : DbContext
                 .HasConstraintName("DETALLE_COMPRAS_STOCK_x_PRODUCTOS");
         });
 
+        modelBuilder.Entity<DetalleDevolucionesVentum>(entity =>
+        {
+            entity.HasKey(e => e.IdDetalleDevolucion);
+
+            entity.ToTable("DETALLE_DEVOLUCIONES_VENTA");
+
+            entity.Property(e => e.IdDetalleDevolucion).HasColumnName("id_detalle_devolucion");
+            entity.Property(e => e.Cantidad).HasColumnName("cantidad");
+            entity.Property(e => e.IdDevolucion).HasColumnName("id_devolucion");
+            entity.Property(e => e.IdProducto).HasColumnName("id_producto");
+            entity.Property(e => e.PrecioUnitario)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("precio_unitario");
+
+            entity.HasOne(d => d.IdDevolucionNavigation).WithMany(p => p.DetalleDevolucionesVenta)
+                .HasForeignKey(d => d.IdDevolucion)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DETALLE_DEVOLUCIONES_DEVOLUCIONES");
+
+            entity.HasOne(d => d.IdProductoNavigation).WithMany(p => p.DetalleDevolucionesVenta)
+                .HasForeignKey(d => d.IdProducto)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DETALLE_DEVOLUCIONES_PRODUCTOS");
+        });
+
         modelBuilder.Entity<DetalleRutina>(entity =>
         {
             entity.HasKey(e => e.IdDetalleRutina);
@@ -451,11 +623,33 @@ public partial class FITLIFENETWORKDbContext : DbContext
                 .HasConstraintName("DETALLE_RUTINAS_x_RUTINAS");
         });
 
+        modelBuilder.Entity<DetalleTransferencia>(entity =>
+        {
+            entity.HasKey(e => e.IdDetalleTransferencia);
+
+            entity.ToTable("DETALLE_TRANSFERENCIAS");
+
+            entity.Property(e => e.IdDetalleTransferencia).HasColumnName("id_detalle_transferencia");
+            entity.Property(e => e.Cantidad).HasColumnName("cantidad");
+            entity.Property(e => e.IdProducto).HasColumnName("id_producto");
+            entity.Property(e => e.IdTransferencia).HasColumnName("id_transferencia");
+
+            entity.HasOne(d => d.IdProductoNavigation).WithMany(p => p.DetalleTransferencia)
+                .HasForeignKey(d => d.IdProducto)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DETALLE_TRANSFERENCIAS_PRODUCTOS");
+
+            entity.HasOne(d => d.IdTransferenciaNavigation).WithMany(p => p.DetalleTransferencia)
+                .HasForeignKey(d => d.IdTransferencia)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DETALLE_TRANSFERENCIAS_TRANSFERENCIAS");
+        });
+
         modelBuilder.Entity<DetalleVenta>(entity =>
         {
             entity.HasKey(e => e.IdDetalleVenta);
 
-            entity.ToTable("DETALLE_VENTAS");
+            entity.ToTable("DETALLE_VENTAS", tb => tb.HasTrigger("TR_ActualizarStockVenta"));
 
             entity.Property(e => e.IdDetalleVenta).HasColumnName("id_detalle_venta");
             entity.Property(e => e.Cantidad).HasColumnName("cantidad");
@@ -474,6 +668,38 @@ public partial class FITLIFENETWORKDbContext : DbContext
                 .HasForeignKey(d => d.IdVenta)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("DETALLE_VENTAS_x_VENTAS");
+        });
+
+        modelBuilder.Entity<DevolucionesVentum>(entity =>
+        {
+            entity.HasKey(e => e.IdDevolucion);
+
+            entity.ToTable("DEVOLUCIONES_VENTA");
+
+            entity.Property(e => e.IdDevolucion).HasColumnName("id_devolucion");
+            entity.Property(e => e.FechaDevolucion)
+                .HasDefaultValueSql("(getdate())", "DF_DEVOLUCIONES_VENTA_FECHA")
+                .HasColumnType("datetime")
+                .HasColumnName("fecha_devolucion");
+            entity.Property(e => e.IdEmpleado).HasColumnName("id_empleado");
+            entity.Property(e => e.IdVenta).HasColumnName("id_venta");
+            entity.Property(e => e.ImporteReintegrado)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("importe_reintegrado");
+            entity.Property(e => e.Motivo)
+                .HasMaxLength(255)
+                .IsUnicode(false)
+                .HasColumnName("motivo");
+
+            entity.HasOne(d => d.IdEmpleadoNavigation).WithMany(p => p.DevolucionesVenta)
+                .HasForeignKey(d => d.IdEmpleado)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DEVOLUCIONES_VENTA_EMPLEADOS");
+
+            entity.HasOne(d => d.IdVentaNavigation).WithMany(p => p.DevolucionesVenta)
+                .HasForeignKey(d => d.IdVenta)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_DEVOLUCIONES_VENTA_VENTAS");
         });
 
         modelBuilder.Entity<Disciplina>(entity =>
@@ -574,7 +800,7 @@ public partial class FITLIFENETWORKDbContext : DbContext
         {
             entity.HasKey(e => e.IdEquipo);
 
-            entity.ToTable("EQUIPAMIENTO");
+            entity.ToTable("EQUIPAMIENTO", tb => tb.HasTrigger("TR_AuditarCambiosEquipamiento"));
 
             entity.Property(e => e.IdEquipo).HasColumnName("id_equipo");
             entity.Property(e => e.EstadoOperativo)
@@ -914,11 +1140,90 @@ public partial class FITLIFENETWORKDbContext : DbContext
                 .HasConstraintName("MANTENIMIENTO_EQUIPAMIENTO_x_PROVEEDORES");
         });
 
+        modelBuilder.Entity<MovimientosStock>(entity =>
+        {
+            entity.HasKey(e => e.IdMovimiento);
+
+            entity.ToTable("MOVIMIENTOS_STOCK");
+
+            entity.HasIndex(e => new { e.IdProducto, e.IdSede, e.FechaMovimiento }, "IX_MOVIMIENTOS_STOCK_PRODUCTO_SEDE");
+
+            entity.Property(e => e.IdMovimiento).HasColumnName("id_movimiento");
+            entity.Property(e => e.Cantidad).HasColumnName("cantidad");
+            entity.Property(e => e.FechaMovimiento)
+                .HasDefaultValueSql("(getdate())", "DF_MOVIMIENTOS_STOCK_FECHA")
+                .HasColumnType("datetime")
+                .HasColumnName("fecha_movimiento");
+            entity.Property(e => e.IdProducto).HasColumnName("id_producto");
+            entity.Property(e => e.IdSede).HasColumnName("id_sede");
+            entity.Property(e => e.IdVenta).HasColumnName("id_venta");
+            entity.Property(e => e.Observaciones)
+                .HasMaxLength(255)
+                .IsUnicode(false)
+                .HasColumnName("observaciones");
+            entity.Property(e => e.TipoMovimiento)
+                .HasMaxLength(30)
+                .IsUnicode(false)
+                .HasColumnName("tipo_movimiento");
+            entity.Property(e => e.UsuarioSistema)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("usuario_sistema");
+
+            entity.HasOne(d => d.IdProductoNavigation).WithMany(p => p.MovimientosStocks)
+                .HasForeignKey(d => d.IdProducto)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_MOVIMIENTOS_STOCK_PRODUCTOS");
+
+            entity.HasOne(d => d.IdSedeNavigation).WithMany(p => p.MovimientosStocks)
+                .HasForeignKey(d => d.IdSede)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_MOVIMIENTOS_STOCK_SEDES");
+
+            entity.HasOne(d => d.IdVentaNavigation).WithMany(p => p.MovimientosStocks)
+                .HasForeignKey(d => d.IdVenta)
+                .HasConstraintName("FK_MOVIMIENTOS_STOCK_VENTAS");
+        });
+
+        modelBuilder.Entity<PagosCuota>(entity =>
+        {
+            entity.HasKey(e => e.IdPago);
+
+            entity.ToTable("PAGOS_CUOTAS");
+
+            entity.Property(e => e.IdPago).HasColumnName("id_pago");
+            entity.Property(e => e.FechaPago)
+                .HasDefaultValueSql("(getdate())", "DF_PAGOS_CUOTAS_FECHA")
+                .HasColumnType("datetime")
+                .HasColumnName("fecha_pago");
+            entity.Property(e => e.IdCobro).HasColumnName("id_cobro");
+            entity.Property(e => e.IdFormaPago).HasColumnName("id_forma_pago");
+            entity.Property(e => e.Importe)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("importe");
+            entity.Property(e => e.UsuarioSistema)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("usuario_sistema");
+
+            entity.HasOne(d => d.IdCobroNavigation).WithMany(p => p.PagosCuota)
+                .HasForeignKey(d => d.IdCobro)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PAGOS_CUOTAS_CUOTAS");
+
+            entity.HasOne(d => d.IdFormaPagoNavigation).WithMany(p => p.PagosCuota)
+                .HasForeignKey(d => d.IdFormaPago)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_PAGOS_CUOTAS_FORMAS");
+        });
+
         modelBuilder.Entity<Persona>(entity =>
         {
             entity.HasKey(e => e.IdPersona);
 
             entity.ToTable("PERSONAS");
+
+            entity.HasIndex(e => e.Dni, "UX_PERSONAS_DNI").IsUnique();
 
             entity.Property(e => e.IdPersona).HasColumnName("id_persona");
             entity.Property(e => e.Apellido)
@@ -979,6 +1284,8 @@ public partial class FITLIFENETWORKDbContext : DbContext
             entity.HasKey(e => e.IdPlanDisciplina);
 
             entity.ToTable("PLANES_DISCIPLINAS");
+
+            entity.HasIndex(e => new { e.IdPlan, e.IdDisciplina }, "UX_PLANES_DISCIPLINAS").IsUnique();
 
             entity.Property(e => e.IdPlanDisciplina).HasColumnName("id_plan_disciplina");
             entity.Property(e => e.IdDisciplina).HasColumnName("id_disciplina");
@@ -1045,7 +1352,9 @@ public partial class FITLIFENETWORKDbContext : DbContext
         {
             entity.HasKey(e => e.IdProducto);
 
-            entity.ToTable("PRODUCTOS");
+            entity.ToTable("PRODUCTOS", tb => tb.HasTrigger("TR_AuditarCambiosPrecios"));
+
+            entity.HasIndex(e => e.CodigoBarras, "UX_PRODUCTOS_CODIGO_BARRAS").IsUnique();
 
             entity.Property(e => e.IdProducto).HasColumnName("id_producto");
             entity.Property(e => e.CodigoBarras)
@@ -1111,6 +1420,8 @@ public partial class FITLIFENETWORKDbContext : DbContext
             entity.HasKey(e => e.IdReserva);
 
             entity.ToTable("RESERVAS");
+
+            entity.HasIndex(e => new { e.IdSocio, e.IdClase }, "UX_RESERVAS_SOCIO_CLASE").IsUnique();
 
             entity.Property(e => e.IdReserva).HasColumnName("id_reserva");
             entity.Property(e => e.EstadoReserva)
@@ -1239,7 +1550,7 @@ public partial class FITLIFENETWORKDbContext : DbContext
         {
             entity.HasKey(e => e.IdSocio);
 
-            entity.ToTable("SOCIOS");
+            entity.ToTable("SOCIOS", tb => tb.HasTrigger("TR_AuditarCambiosEstadoSocio"));
 
             entity.Property(e => e.IdSocio).HasColumnName("id_socio");
             entity.Property(e => e.EstadoCuenta)
@@ -1270,10 +1581,20 @@ public partial class FITLIFENETWORKDbContext : DbContext
         {
             entity.HasKey(e => e.IdStockSede);
 
-            entity.ToTable("STOCK_SEDE");
+            entity.ToTable("STOCK_SEDE", tb =>
+                {
+                    tb.HasTrigger("TR_ControlarStockNegativo");
+                    tb.HasTrigger("TR_RegistrarMovimientosStock");
+                });
+
+            entity.HasIndex(e => new { e.IdSede, e.IdProducto }, "UX_STOCK_SEDE_PRODUCTO").IsUnique();
 
             entity.Property(e => e.IdStockSede).HasColumnName("id_stock_sede");
             entity.Property(e => e.CantidadActual).HasColumnName("cantidad_actual");
+            entity.Property(e => e.FilaVersion)
+                .IsRowVersion()
+                .IsConcurrencyToken()
+                .HasColumnName("fila_version");
             entity.Property(e => e.IdProducto).HasColumnName("id_producto");
             entity.Property(e => e.IdSede).HasColumnName("id_sede");
 
@@ -1286,6 +1607,40 @@ public partial class FITLIFENETWORKDbContext : DbContext
                 .HasForeignKey(d => d.IdSede)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("STOCK_SEDE_x_SEDES");
+        });
+
+        modelBuilder.Entity<TransferenciasStock>(entity =>
+        {
+            entity.HasKey(e => e.IdTransferencia);
+
+            entity.ToTable("TRANSFERENCIAS_STOCK");
+
+            entity.Property(e => e.IdTransferencia).HasColumnName("id_transferencia");
+            entity.Property(e => e.Estado)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasDefaultValue("PENDIENTE", "DF_TRANSFERENCIAS_ESTADO")
+                .HasColumnName("estado");
+            entity.Property(e => e.FechaSolicitud)
+                .HasDefaultValueSql("(getdate())", "DF_TRANSFERENCIAS_FECHA")
+                .HasColumnType("datetime")
+                .HasColumnName("fecha_solicitud");
+            entity.Property(e => e.IdSedeDestino).HasColumnName("id_sede_destino");
+            entity.Property(e => e.IdSedeOrigen).HasColumnName("id_sede_origen");
+            entity.Property(e => e.UsuarioSistema)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("usuario_sistema");
+
+            entity.HasOne(d => d.IdSedeDestinoNavigation).WithMany(p => p.TransferenciasStockIdSedeDestinoNavigations)
+                .HasForeignKey(d => d.IdSedeDestino)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_TRANSFERENCIAS_DESTINO");
+
+            entity.HasOne(d => d.IdSedeOrigenNavigation).WithMany(p => p.TransferenciasStockIdSedeOrigenNavigations)
+                .HasForeignKey(d => d.IdSedeOrigen)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_TRANSFERENCIAS_ORIGEN");
         });
 
         modelBuilder.Entity<Turno>(entity =>
@@ -1389,6 +1744,302 @@ public partial class FITLIFENETWORKDbContext : DbContext
                 .HasForeignKey(d => d.IdVendedor)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("VENTAS_x_EMPLEADOS");
+        });
+
+        modelBuilder.Entity<VwControlAptosMedico>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("vw_ControlAptosMedicos");
+
+            entity.Property(e => e.Apellido)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("apellido");
+            entity.Property(e => e.Dni)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("dni");
+            entity.Property(e => e.EstadoApto)
+                .HasMaxLength(16)
+                .IsUnicode(false)
+                .HasColumnName("estado_apto");
+            entity.Property(e => e.FechaEmision).HasColumnName("fecha_emision");
+            entity.Property(e => e.FechaVencimiento).HasColumnName("fecha_vencimiento");
+            entity.Property(e => e.IdApto).HasColumnName("id_apto");
+            entity.Property(e => e.IdSocio).HasColumnName("id_socio");
+            entity.Property(e => e.Nombre)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("nombre");
+        });
+
+        modelBuilder.Entity<VwCostosMantenimientoEquipamiento>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("vw_CostosMantenimientoEquipamiento");
+
+            entity.Property(e => e.CantidadIntervenciones).HasColumnName("cantidad_intervenciones");
+            entity.Property(e => e.CostoTotal)
+                .HasColumnType("decimal(38, 2)")
+                .HasColumnName("costo_total");
+            entity.Property(e => e.IdEquipo).HasColumnName("id_equipo");
+            entity.Property(e => e.IdSede).HasColumnName("id_sede");
+            entity.Property(e => e.NombreMaquina)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("nombre_maquina");
+            entity.Property(e => e.NombreSede)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("nombre_sede");
+            entity.Property(e => e.UltimoMantenimiento).HasColumnName("ultimo_mantenimiento");
+        });
+
+        modelBuilder.Entity<VwCuotasPendiente>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("vw_CuotasPendientes");
+
+            entity.Property(e => e.Apellido)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("apellido");
+            entity.Property(e => e.EstadoCuota)
+                .HasMaxLength(9)
+                .IsUnicode(false)
+                .HasColumnName("estado_cuota");
+            entity.Property(e => e.FechaVencimiento).HasColumnName("fecha_vencimiento");
+            entity.Property(e => e.IdCobro).HasColumnName("id_cobro");
+            entity.Property(e => e.IdContrato).HasColumnName("id_contrato");
+            entity.Property(e => e.IdSocio).HasColumnName("id_socio");
+            entity.Property(e => e.ImportePagado)
+                .HasColumnType("decimal(38, 2)")
+                .HasColumnName("importe_pagado");
+            entity.Property(e => e.Monto)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("monto");
+            entity.Property(e => e.Nombre)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("nombre");
+            entity.Property(e => e.NumeroCuota).HasColumnName("numero_cuota");
+            entity.Property(e => e.Saldo)
+                .HasColumnType("decimal(38, 2)")
+                .HasColumnName("saldo");
+        });
+
+        modelBuilder.Entity<VwEstadoCuentaSocio>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("vw_EstadoCuentaSocios");
+
+            entity.Property(e => e.Apellido)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("apellido");
+            entity.Property(e => e.CuotasEmitidas).HasColumnName("cuotas_emitidas");
+            entity.Property(e => e.Dni)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("dni");
+            entity.Property(e => e.IdSocio).HasColumnName("id_socio");
+            entity.Property(e => e.ImporteEmitido)
+                .HasColumnType("decimal(38, 2)")
+                .HasColumnName("importe_emitido");
+            entity.Property(e => e.ImportePagado)
+                .HasColumnType("decimal(38, 2)")
+                .HasColumnName("importe_pagado");
+            entity.Property(e => e.Nombre)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("nombre");
+            entity.Property(e => e.SaldoPendiente)
+                .HasColumnType("decimal(38, 2)")
+                .HasColumnName("saldo_pendiente");
+        });
+
+        modelBuilder.Entity<VwIncidenciasActiva>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("vw_IncidenciasActivas");
+
+            entity.Property(e => e.Descripcion)
+                .HasMaxLength(255)
+                .IsUnicode(false)
+                .HasColumnName("descripcion");
+            entity.Property(e => e.FechaRegistro)
+                .HasColumnType("datetime")
+                .HasColumnName("fecha_registro");
+            entity.Property(e => e.IdEquipo).HasColumnName("id_equipo");
+            entity.Property(e => e.IdEstadoReclamo).HasColumnName("id_estado_reclamo");
+            entity.Property(e => e.IdReclamo).HasColumnName("id_reclamo");
+            entity.Property(e => e.IdSede).HasColumnName("id_sede");
+            entity.Property(e => e.IdTecnicoAsignado).HasColumnName("id_tecnico_asignado");
+            entity.Property(e => e.NombreEstado)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("nombre_estado");
+            entity.Property(e => e.NombreMaquina)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("nombre_maquina");
+            entity.Property(e => e.NombreSede)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("nombre_sede");
+        });
+
+        modelBuilder.Entity<VwMembresiasVigente>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("vw_MembresiasVigentes");
+
+            entity.Property(e => e.Apellido)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("apellido");
+            entity.Property(e => e.EstadoContrato)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("estado_contrato");
+            entity.Property(e => e.FechaInicio).HasColumnName("fecha_inicio");
+            entity.Property(e => e.FechaVencimiento).HasColumnName("fecha_vencimiento");
+            entity.Property(e => e.IdContrato).HasColumnName("id_contrato");
+            entity.Property(e => e.IdPlan).HasColumnName("id_plan");
+            entity.Property(e => e.IdSede).HasColumnName("id_sede");
+            entity.Property(e => e.IdSocio).HasColumnName("id_socio");
+            entity.Property(e => e.Nombre)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("nombre");
+            entity.Property(e => e.NombrePlan)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("nombre_plan");
+            entity.Property(e => e.NombreSede)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("nombre_sede");
+        });
+
+        modelBuilder.Entity<VwOcupacionClasesGrupale>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("vw_OcupacionClasesGrupales");
+
+            entity.Property(e => e.CupoLimite).HasColumnName("cupo_limite");
+            entity.Property(e => e.CuposDisponibles).HasColumnName("cupos_disponibles");
+            entity.Property(e => e.CuposOcupados).HasColumnName("cupos_ocupados");
+            entity.Property(e => e.FechaClase).HasColumnName("fecha_clase");
+            entity.Property(e => e.HoraFin).HasColumnName("hora_fin");
+            entity.Property(e => e.HoraInicio).HasColumnName("hora_inicio");
+            entity.Property(e => e.IdClase).HasColumnName("id_clase");
+            entity.Property(e => e.IdSede).HasColumnName("id_sede");
+            entity.Property(e => e.NombreDisciplina)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("nombre_disciplina");
+            entity.Property(e => e.NombreSede)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("nombre_sede");
+        });
+
+        modelBuilder.Entity<VwRentabilidadConvenio>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("vw_RentabilidadConvenios");
+
+            entity.Property(e => e.Deuda)
+                .HasColumnType("decimal(38, 2)")
+                .HasColumnName("deuda");
+            entity.Property(e => e.IdConvenio).HasColumnName("id_convenio");
+            entity.Property(e => e.ImporteCobrado)
+                .HasColumnType("decimal(38, 2)")
+                .HasColumnName("importe_cobrado");
+            entity.Property(e => e.ImporteFacturado)
+                .HasColumnType("decimal(38, 2)")
+                .HasColumnName("importe_facturado");
+            entity.Property(e => e.PorcentajeCobrabilidad)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("porcentaje_cobrabilidad");
+            entity.Property(e => e.PorcentajeDescuento)
+                .HasColumnType("decimal(5, 2)")
+                .HasColumnName("porcentaje_descuento");
+            entity.Property(e => e.RazonSocial)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("razon_social");
+            entity.Property(e => e.SociosAsociados).HasColumnName("socios_asociados");
+        });
+
+        modelBuilder.Entity<VwStockDisponiblePorSede>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("vw_StockDisponiblePorSede");
+
+            entity.Property(e => e.CantidadActual).HasColumnName("cantidad_actual");
+            entity.Property(e => e.IdProducto).HasColumnName("id_producto");
+            entity.Property(e => e.IdSede).HasColumnName("id_sede");
+            entity.Property(e => e.NombreProducto)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("nombre_producto");
+            entity.Property(e => e.NombreSede)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("nombre_sede");
+            entity.Property(e => e.StockCritico).HasColumnName("stock_critico");
+            entity.Property(e => e.StockMinimo).HasColumnName("stock_minimo");
+        });
+
+        modelBuilder.Entity<VwVentasDetalladasProducto>(entity =>
+        {
+            entity
+                .HasNoKey()
+                .ToView("vw_VentasDetalladasProductos");
+
+            entity.Property(e => e.Cantidad).HasColumnName("cantidad");
+            entity.Property(e => e.FechaHoraVenta)
+                .HasColumnType("datetime")
+                .HasColumnName("fecha_hora_venta");
+            entity.Property(e => e.IdProducto).HasColumnName("id_producto");
+            entity.Property(e => e.IdSede).HasColumnName("id_sede");
+            entity.Property(e => e.IdSocio).HasColumnName("id_socio");
+            entity.Property(e => e.IdVendedor).HasColumnName("id_vendedor");
+            entity.Property(e => e.IdVenta).HasColumnName("id_venta");
+            entity.Property(e => e.ImporteLinea)
+                .HasColumnType("decimal(21, 2)")
+                .HasColumnName("importe_linea");
+            entity.Property(e => e.ImputadoACuenta).HasColumnName("imputado_a_cuenta");
+            entity.Property(e => e.NombreCategoria)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("nombre_categoria");
+            entity.Property(e => e.NombreFormaPago)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("nombre_forma_pago");
+            entity.Property(e => e.NombreProducto)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("nombre_producto");
+            entity.Property(e => e.NombreSede)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("nombre_sede");
+            entity.Property(e => e.PrecioUnitarioHistorico)
+                .HasColumnType("decimal(10, 2)")
+                .HasColumnName("precio_unitario_historico");
         });
 
         OnModelCreatingPartial(modelBuilder);

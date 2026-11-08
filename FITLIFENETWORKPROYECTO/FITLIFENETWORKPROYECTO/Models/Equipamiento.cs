@@ -17,6 +17,8 @@ public partial class Equipamiento
 
     public string EstadoOperativo { get; set; } = null!;
 
+    public virtual ICollection<AuditoriaEquipamiento> AuditoriaEquipamientos { get; set; } = new List<AuditoriaEquipamiento>();
+
     public virtual Sede IdSedeNavigation { get; set; } = null!;
 
     public virtual ICollection<IncidenciasReclamo> IncidenciasReclamos { get; set; } = new List<IncidenciasReclamo>();

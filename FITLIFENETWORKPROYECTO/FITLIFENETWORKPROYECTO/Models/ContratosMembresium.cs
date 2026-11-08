@@ -19,6 +19,8 @@ public partial class ContratosMembresium
 
     public string EstadoContrato { get; set; } = null!;
 
+    public byte[] FilaVersion { get; set; } = null!;
+
     public virtual ICollection<CuotasCobro> CuotasCobros { get; set; } = new List<CuotasCobro>();
 
     public virtual Plane IdPlanNavigation { get; set; } = null!;

@@ -22,4 +22,6 @@ public partial class CuotasCobro
     public virtual ContratosMembresium IdContratoNavigation { get; set; } = null!;
 
     public virtual FormasPago IdFormaPagoNavigation { get; set; } = null!;
+
+    public virtual ICollection<PagosCuota> PagosCuota { get; set; } = new List<PagosCuota>();
 }

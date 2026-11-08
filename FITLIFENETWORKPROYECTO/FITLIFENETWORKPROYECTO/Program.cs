@@ -12,7 +12,7 @@ builder.Services.AddOpenApi();
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'DefaultConnection'.");
 
-builder.Services.AddDbContext<FitLifeDbContext>(options =>
+builder.Services.AddDbContext<FITLIFENETWORKDbContext>(options =>
     options.UseSqlServer(connectionString)); 
 
 var app = builder.Build();

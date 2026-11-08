@@ -19,7 +19,11 @@ public partial class Empleado
 
     public decimal SueldoBase { get; set; }
 
+    public virtual ICollection<Caja> Cajas { get; set; } = new List<Caja>();
+
     public virtual ICollection<Clase> Clases { get; set; } = new List<Clase>();
+
+    public virtual ICollection<DevolucionesVentum> DevolucionesVenta { get; set; } = new List<DevolucionesVentum>();
 
     public virtual ICollection<EmpleadosDisciplina> EmpleadosDisciplinas { get; set; } = new List<EmpleadosDisciplina>();
 
