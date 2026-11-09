@@ -99,7 +99,7 @@ namespace FITLIFENETWORKPROYECTO.Repositories
 
         public async Task<List<Top3Productos>> GetTop3Productos(int? año)
         {
-            string query = @"
+            string query = @$"
                             WITH TotalesPorProducto AS (
                             SELECT
                             nombre_sede,
@@ -110,7 +110,7 @@ namespace FITLIFENETWORKPROYECTO.Repositories
                             SUM(CASE WHEN imputado_a_cuenta = 1 THEN subtotal_linea ELSE 0 END) AS facturacion_cuenta_corriente,
                             SUM(CASE WHEN imputado_a_cuenta = 0 THEN subtotal_linea ELSE 0 END) AS facturacion_contado
                             FROM vw_VentasDetalladasProductos
-                            WHERE anio_venta = {0}
+                            WHERE anio_venta = {año}
                             GROUP BY nombre_sede, nombre_categoria, nombre_producto
                                                                                     ),
                             RankingProductos AS (
@@ -142,23 +142,31 @@ namespace FITLIFENETWORKPROYECTO.Repositories
             return await db.Top3Productos.FromSqlRaw(query, año).ToListAsync();
         }
 
-        public async Task<List<ReporteReservaTT>> GetReporteReserva()
+        public async Task<List<ReporteReservaTT>> GetReporteReserva(DateTime Fecha1, DateTime Fecha2, string Estado1, string Estado2)
         {
             //Busque como hacer Tablas Temporales y siempre decian que era un bardo, que era mas facil mandan el cuerpo de la tabla y listo, asiq eso hice
-            string query = @"
-                             SELECT
-                                    R.id_reserva AS IdReserva,
-                                    P.nombre AS Nombre,
-                                    P.apellido AS Apellido,
-                                    C.fecha_clase AS FechaClase,
-                                    C.hora_inicio AS HoraInicio,
-                                    R.estado_reserva AS EstadoReserva
-                             FROM RESERVAS R
-                             INNER JOIN SOCIOS S ON R.id_socio = S.id_socio
-                             INNER JOIN PERSONAS P ON S.id_persona = P.id_persona
-                             INNER JOIN CLASES C ON R.id_clase = C.id_clase;";
+            string query = @$"
+                                SELECT
+                                    R.id_reserva,
+                                    P.nombre,
+                                    P.apellido,
+                                    C.fecha_clase,
+                                    C.hora_inicio,
+                                    D.nombre_disciplina,
+                                    R.estado_reserva
+                                FROM RESERVAS R
+                                INNER JOIN SOCIOS S
+                                    ON R.id_socio = S.id_socio
+                                INNER JOIN PERSONAS P
+                                    ON S.id_persona = P.id_persona
+                                INNER JOIN CLASES C
+                                    ON R.id_clase = C.id_clase
+                                INNER JOIN DISCIPLINAS D
+                                    ON C.id_disciplina = D.id_disciplina
+                                WHERE D.nombre_disciplina IN ('{Estado1}', '{Estado2}')
+                                AND MONTH(C.fecha_clase) BETWEEN MONTH('{Fecha1}') AND MONTH('{Fecha2}');";
 
-            return await db.ReporteReservaTT.FromSqlRaw(query).ToListAsync();
+            return await db.ReporteReservaTT.FromSqlRaw(query, Fecha1, Fecha2, Estado1, Estado2).ToListAsync();
         }
 
         public async Task<List<EvaluacionEstadistica>> GetEvaluacionesEstadistica()
@@ -231,7 +239,7 @@ namespace FITLIFENETWORKPROYECTO.Repositories
                             INNER JOIN SOCIOS SOC ON CE.id_convenio = SOC.id_convenio
                             INNER JOIN CONTRATOS_MEMBRESIA CM ON SOC.id_socio = CM.id_socio
                             INNER JOIN CUOTAS_COBROS CC ON CM.id_contrato = CC.id_contrato
-                            WHERE SOC.estado_cuenta IN ({Estado})
+                            WHERE SOC.estado_cuenta IN ('{Estado}')
                             GROUP BY 
                                 CE.id_convenio,
                                 CE.razon_social,
@@ -245,4 +253,3 @@ namespace FITLIFENETWORKPROYECTO.Repositories
         }
     }
 }
-

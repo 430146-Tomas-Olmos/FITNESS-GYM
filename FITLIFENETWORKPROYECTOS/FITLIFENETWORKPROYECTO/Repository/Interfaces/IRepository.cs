@@ -12,7 +12,7 @@ namespace FITLIFENETWORKPROYECTO.Repositorys.Interfaces
 
         public Task<List<Top3Productos>> GetTop3Productos(int? año);
 
-        public Task<List<ReporteReservaTT>> GetReporteReserva();
+        public Task<List<ReporteReservaTT>> GetReporteReserva(DateTime Fecha1, DateTime Fecha2, string Estado1, string Estado2);
 
         public Task<List<EvaluacionEstadistica>> GetEvaluacionesEstadistica();
 

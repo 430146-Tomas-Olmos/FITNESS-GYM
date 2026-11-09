@@ -57,9 +57,17 @@ namespace FITLIFENETWORKPROYECTO.Services
             return await repo.GetRentabilidadConvenios(Estado);
         }
 
-        public async Task<List<ReporteReservaTT>> GetReporteReserva()
+        public async Task<List<ReporteReservaTT>> GetReporteReserva(DateTime Fecha1, DateTime Fecha2, string Estado1, string Estado2)
         {
-            return await repo.GetReporteReserva();
+            if(Estado1 == null || Estado2 == null)
+            {
+                throw new ArgumentNullException();
+            }
+            if (Fecha1 > DateTime.Today || Fecha2 > DateTime.Today)
+            {
+                throw new ArgumentException();
+            }
+            return await repo.GetReporteReserva(Fecha1, Fecha2, Estado1, Estado2);
         }
 
         public async Task<List<Top3Productos>> GetTop3Productos(int? año)

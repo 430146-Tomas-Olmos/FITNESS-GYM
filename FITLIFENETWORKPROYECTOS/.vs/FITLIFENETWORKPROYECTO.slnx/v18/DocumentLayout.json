@@ -7,14 +7,6 @@
       "RelativeMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|solutionrelative:fitlifenetworkproyecto\\services\\servicesfit.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|c:\\users\\santi\\onedrive\\desktop\\fitness-gym\\fitlifenetworkproyectos\\fitlifenetworkproyecto\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
-      "RelativeMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|solutionrelative:fitlifenetworkproyecto\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|c:\\users\\santi\\onedrive\\desktop\\fitness-gym\\fitlifenetworkproyectos\\fitlifenetworkproyecto\\repository\\repositorys.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|solutionrelative:fitlifenetworkproyecto\\repository\\repositorys.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|c:\\users\\santi\\onedrive\\desktop\\fitness-gym\\fitlifenetworkproyectos\\fitlifenetworkproyecto\\services\\interfaces\\iservices.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|solutionrelative:fitlifenetworkproyecto\\services\\interfaces\\iservices.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -23,16 +15,20 @@
       "RelativeMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|solutionrelative:fitlifenetworkproyecto\\repository\\interfaces\\irepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|c:\\users\\santi\\onedrive\\desktop\\fitness-gym\\fitlifenetworkproyectos\\fitlifenetworkproyecto\\dto\\evaluacionestadistica.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|solutionrelative:fitlifenetworkproyecto\\dto\\evaluacionestadistica.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|c:\\users\\santi\\onedrive\\desktop\\fitness-gym\\fitlifenetworkproyectos\\fitlifenetworkproyecto\\repository\\repositorys.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|solutionrelative:fitlifenetworkproyecto\\repository\\repositorys.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|c:\\users\\santi\\onedrive\\desktop\\fitness-gym\\fitlifenetworkproyectos\\fitlifenetworkproyecto\\dto\\rentabilidadconvenio.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|solutionrelative:fitlifenetworkproyecto\\dto\\rentabilidadconvenio.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|c:\\users\\santi\\onedrive\\desktop\\fitness-gym\\fitlifenetworkproyectos\\fitlifenetworkproyecto\\dto\\premioscanjeados.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|solutionrelative:fitlifenetworkproyecto\\dto\\premioscanjeados.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|c:\\users\\santi\\onedrive\\desktop\\fitness-gym\\fitlifenetworkproyectos\\fitlifenetworkproyecto\\dto\\rentabilidadconvenio.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|solutionrelative:fitlifenetworkproyecto\\dto\\rentabilidadconvenio.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|c:\\users\\santi\\onedrive\\desktop\\fitness-gym\\fitlifenetworkproyectos\\fitlifenetworkproyecto\\dto\\evaluacionestadistica.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|solutionrelative:fitlifenetworkproyecto\\dto\\evaluacionestadistica.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|c:\\users\\santi\\onedrive\\desktop\\fitness-gym\\fitlifenetworkproyectos\\fitlifenetworkproyecto\\dto\\reporterecaudacionsede.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -45,6 +41,10 @@
     {
       "AbsoluteMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|c:\\users\\santi\\onedrive\\desktop\\fitness-gym\\fitlifenetworkproyectos\\fitlifenetworkproyecto\\dto\\reportereservatt.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|solutionrelative:fitlifenetworkproyecto\\dto\\reportereservatt.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|c:\\users\\santi\\onedrive\\desktop\\fitness-gym\\fitlifenetworkproyectos\\fitlifenetworkproyecto\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|solutionrelative:fitlifenetworkproyecto\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{D91F0C58-A86B-2BBE-425F-D0176368D1EA}|FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj|c:\\users\\santi\\onedrive\\desktop\\fitness-gym\\fitlifenetworkproyectos\\fitlifenetworkproyecto\\dto\\controlaptomedico.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -78,13 +78,13 @@
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "Repositorys.cs",
               "DocumentMoniker": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\Repository\\Repositorys.cs",
               "RelativeDocumentMoniker": "FITLIFENETWORKPROYECTO\\Repository\\Repositorys.cs",
               "ToolTip": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\Repository\\Repositorys.cs",
               "RelativeToolTip": "FITLIFENETWORKPROYECTO\\Repository\\Repositorys.cs",
-              "ViewState": "AgIAAEQAAAAAAAAAAAAkwPMAAABKAAAAAAAAAA==",
+              "ViewState": "AgIAAIgAAAAAAAAAAAAAAJAAAABEAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-11-08T22:28:12.175Z",
               "IsPinned": true,
@@ -92,7 +92,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 9,
               "Title": "ReporteReservaTT.cs",
               "DocumentMoniker": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\DTO\\ReporteReservaTT.cs",
               "RelativeDocumentMoniker": "FITLIFENETWORKPROYECTO\\DTO\\ReporteReservaTT.cs",
@@ -105,7 +105,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 8,
               "Title": "Top3Productos.cs",
               "DocumentMoniker": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\DTO\\Top3Productos.cs",
               "RelativeDocumentMoniker": "FITLIFENETWORKPROYECTO\\DTO\\Top3Productos.cs",
@@ -118,7 +118,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 5,
               "Title": "PremiosCanjeados.cs",
               "DocumentMoniker": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\DTO\\PremiosCanjeados.cs",
               "RelativeDocumentMoniker": "FITLIFENETWORKPROYECTO\\DTO\\PremiosCanjeados.cs",
@@ -139,12 +139,11 @@
               "RelativeToolTip": "FITLIFENETWORKPROYECTO\\DTO\\AuditoriaAptoMedico.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAQAAAAQAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-11-09T19:47:21.465Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-11-09T19:47:21.465Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 4,
               "Title": "RentabilidadConvenio.cs",
               "DocumentMoniker": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\DTO\\RentabilidadConvenio.cs",
               "RelativeDocumentMoniker": "FITLIFENETWORKPROYECTO\\DTO\\RentabilidadConvenio.cs",
@@ -165,12 +164,11 @@
               "RelativeToolTip": "FITLIFENETWORKPROYECTO\\DTO\\ControlAptoMedico.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAA4AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-11-09T19:46:04.665Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-11-09T19:46:04.665Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 6,
               "Title": "EvaluacionEstadistica.cs",
               "DocumentMoniker": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\DTO\\EvaluacionEstadistica.cs",
               "RelativeDocumentMoniker": "FITLIFENETWORKPROYECTO\\DTO\\EvaluacionEstadistica.cs",
@@ -189,27 +187,27 @@
               "RelativeDocumentMoniker": "FITLIFENETWORKPROYECTO\\Services\\ServicesFIT.cs",
               "ToolTip": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\Services\\ServicesFIT.cs",
               "RelativeToolTip": "FITLIFENETWORKPROYECTO\\Services\\ServicesFIT.cs",
-              "ViewState": "AgIAACsAAAAAAAAAAAAwwBsAAABSAAAAAAAAAA==",
+              "ViewState": "AgIAABQAAAAAAAAAAAAgwDsAAACEAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-11-09T19:32:06.028Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 1,
               "Title": "IServices.cs",
               "DocumentMoniker": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\Services\\Interfaces\\IServices.cs",
               "RelativeDocumentMoniker": "FITLIFENETWORKPROYECTO\\Services\\Interfaces\\IServices.cs",
               "ToolTip": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\Services\\Interfaces\\IServices.cs",
               "RelativeToolTip": "FITLIFENETWORKPROYECTO\\Services\\Interfaces\\IServices.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAABMAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAB+AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-11-09T19:31:37.403Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 7,
               "Title": "ReporteRecaudacionSede.cs",
               "DocumentMoniker": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\DTO\\ReporteRecaudacionSede.cs",
               "RelativeDocumentMoniker": "FITLIFENETWORKPROYECTO\\DTO\\ReporteRecaudacionSede.cs",
@@ -230,18 +228,17 @@
               "RelativeToolTip": "FITLIFENETWORKPROYECTO\\Models\\Context\\FITLIFENETWORKDbContext.cs",
               "ViewState": "AgIAAL0AAAAAAAAAAAAcwNYAAAAKAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-11-08T22:29:14.915Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-11-08T22:29:14.915Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 2,
               "Title": "IRepository.cs",
               "DocumentMoniker": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\Repository\\Interfaces\\IRepository.cs",
               "RelativeDocumentMoniker": "FITLIFENETWORKPROYECTO\\Repository\\Interfaces\\IRepository.cs",
               "ToolTip": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\Repository\\Interfaces\\IRepository.cs",
               "RelativeToolTip": "FITLIFENETWORKPROYECTO\\Repository\\Interfaces\\IRepository.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAABMAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABIAAABGAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-11-08T22:27:59.075Z",
               "EditorCaption": ""
@@ -260,7 +257,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 10,
               "Title": "appsettings.json",
               "DocumentMoniker": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\appsettings.json",
               "RelativeDocumentMoniker": "FITLIFENETWORKPROYECTO\\appsettings.json",
@@ -268,8 +265,7 @@
               "RelativeToolTip": "FITLIFENETWORKPROYECTO\\appsettings.json",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2026-11-08T22:16:38.638Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-11-08T22:16:38.638Z"
             },
             {
               "$type": "Document",
