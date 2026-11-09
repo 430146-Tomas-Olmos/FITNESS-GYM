@@ -1,4 +1,6 @@
-﻿
+﻿USE master
+GO
+
 CREATE DATABASE FITLIFENETWORKdb
 GO
 

@@ -1833,7 +1833,7 @@ INSERT INTO STOCK_SEDE (id_sede, id_producto, cantidad_actual) VALUES
 (1, 14, 99),
 (1, 15, 77),
 (1, 16, 69),
-(1, 17, 23),
+(1, 17, 30),
 (1, 18, 42),
 (1, 19, 52),
 (1, 20, 17),
@@ -1849,7 +1849,7 @@ INSERT INTO STOCK_SEDE (id_sede, id_producto, cantidad_actual) VALUES
 (1, 30, 39),
 (1, 31, 58),
 (2, 1, 11),
-(2, 2, 1),
+(2, 2, 10),
 (2, 3, 20),
 (2, 4, 13),
 (2, 6, 11),
@@ -9119,3 +9119,6 @@ IF EXISTS (
 COMMIT TRANSACTION;
 PRINT '>> CARGA FINALIZADA CORRECTAMENTE: 8,711 filas en 49 tablas.';
 PRINT '>> Siguiente paso: ejecutar FitLife_Validacion.sql';
+
+
+
