@@ -1,5 +1,8 @@
+using FITLIFENETWORKPROYECTO.Models.Context;
+using FITLIFENETWORKPROYECTO.Repositories;
+using FITLIFENETWORKPROYECTO.Repositorys;
+using FITLIFENETWORKPROYECTO.Repositorys.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using FITLIFENETWORKPROYECTO.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +16,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'DefaultConnection'.");
 
 builder.Services.AddDbContext<FITLIFENETWORKDbContext>(options =>
-    options.UseSqlServer(connectionString)); 
+    options.UseSqlServer(connectionString));
+builder.Services.AddScoped<IRepository, RepositoryFitLife>();
 
 var app = builder.Build();
 
