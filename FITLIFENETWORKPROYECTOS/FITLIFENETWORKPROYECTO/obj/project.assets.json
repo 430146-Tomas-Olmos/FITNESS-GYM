@@ -3218,23 +3218,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\santi\\.nuget\\packages\\": {},
-    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+    "C:\\Users\\leo\\.nuget\\packages\\": {},
+    "D:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj",
+      "projectUniqueName": "C:\\Users\\leo\\Documents\\GitHub\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj",
       "projectName": "FITLIFENETWORKPROYECTO",
-      "projectPath": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj",
-      "packagesPath": "C:\\Users\\santi\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\santi\\OneDrive\\Desktop\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\obj\\",
+      "projectPath": "C:\\Users\\leo\\Documents\\GitHub\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj",
+      "packagesPath": "C:\\Users\\leo\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\leo\\Documents\\GitHub\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
-        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
+        "D:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\santi\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\leo\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -3243,7 +3243,6 @@
       ],
       "sources": {
         "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-        "C:\\Program Files\\dotnet\\library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {

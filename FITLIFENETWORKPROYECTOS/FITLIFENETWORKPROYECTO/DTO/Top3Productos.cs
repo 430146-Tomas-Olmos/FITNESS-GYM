@@ -3,11 +3,11 @@
     //Consulta 6
     public class Top3Productos
     {
-        public string Sede { get; set; }
+        public string? Sede { get; set; }
         public long PuestoRanking { get; set; }
-        public string Producto { get; set; }
-        public string Categoría { get; set; }
-        int UnidadesVendidas { get; set; }
+        public string? Producto { get; set; }
+        public string? Categoría { get; set; }
+        public int UnidadesVendidas { get; set; }
         public decimal FacturacionTotal { get; set; }
         public decimal MontoCtaCte { get; set; }
         public decimal? PctImputadoCtaCte { get; set; }

@@ -1,6 +1,108 @@
 @FITLIFENETWORKPROYECTO_HostAddress = http://localhost:5275
 
-GET {{FITLIFENETWORKPROYECTO_HostAddress}}/weatherforecast/
+### Smoke: salud de la API
+GET {{FITLIFENETWORKPROYECTO_HostAddress}}/swagger
+Accept: text/html
+
+### Socios
+GET {{FITLIFENETWORKPROYECTO_HostAddress}}/api/socios
 Accept: application/json
+
+### Productos
+GET {{FITLIFENETWORKPROYECTO_HostAddress}}/api/productos
+Accept: application/json
+
+### Contratos
+GET {{FITLIFENETWORKPROYECTO_HostAddress}}/api/contratos
+Accept: application/json
+
+### Reservas
+GET {{FITLIFENETWORKPROYECTO_HostAddress}}/api/reservas
+Accept: application/json
+
+### Convenios
+GET {{FITLIFENETWORKPROYECTO_HostAddress}}/api/convenios
+Accept: application/json
+
+### Transferencias
+GET {{FITLIFENETWORKPROYECTO_HostAddress}}/api/transferencias
+Accept: application/json
+
+### Cierres de caja
+GET {{FITLIFENETWORKPROYECTO_HostAddress}}/api/cierrescaja
+Accept: application/json
+
+### Turnos
+GET {{FITLIFENETWORKPROYECTO_HostAddress}}/api/turnos
+Accept: application/json
+
+### Cuotas pendientes
+GET {{FITLIFENETWORKPROYECTO_HostAddress}}/api/cuotas/pendientes?idSocio=1
+Accept: application/json
+
+### Historial de pagos
+GET {{FITLIFENETWORKPROYECTO_HostAddress}}/api/cuotas/historial?idSocio=1
+Accept: application/json
+
+### Post de reserva
+POST {{FITLIFENETWORKPROYECTO_HostAddress}}/api/reservas
+Content-Type: application/json
+
+{
+  "idSocio": 1,
+  "idClase": 1,
+  "estadoReserva": "CONFIRMADA"
+}
+
+### Post de transferencia
+POST {{FITLIFENETWORKPROYECTO_HostAddress}}/api/transferencias
+Content-Type: application/json
+
+{
+  "idSedeOrigen": 1,
+  "idSedeDestino": 2,
+  "usuarioSistema": "smoke-test",
+  "detalles": [
+    { "idProducto": 1, "cantidad": 1 }
+  ]
+}
+
+### Renovación de contrato
+POST {{FITLIFENETWORKPROYECTO_HostAddress}}/api/contratos/1/renovar
+Content-Type: application/json
+
+{
+  "idSocio": 1,
+  "idPlan": 1,
+  "idSede": 1,
+  "fechaInicio": "2026-01-01",
+  "fechaVencimiento": "2026-12-31",
+  "estadoContrato": "ACTIVO"
+}
+
+### Venta POS
+POST {{FITLIFENETWORKPROYECTO_HostAddress}}/api/ventas
+Content-Type: application/json
+
+{
+  "idSocio": 1,
+  "idSede": 1,
+  "idVendedor": 1,
+  "idFormaPago": 1,
+  "imputadoACuenta": false,
+  "items": [
+    { "idProducto": 1, "cantidad": 1, "precioUnitarioHistorico": 1500 }
+  ]
+}
+
+### Post de cierre de caja
+POST {{FITLIFENETWORKPROYECTO_HostAddress}}/api/cierrescaja
+Content-Type: application/json
+
+{
+  "idCaja": 1,
+  "saldoReal": 1500,
+  "observaciones": "Smoke test"
+}
 
 ###
