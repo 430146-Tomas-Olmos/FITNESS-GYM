@@ -1,11 +1,13 @@
 using FITLIFENETWORKPROYECTO.DTO;
 using FITLIFENETWORKPROYECTO.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FITLIFENETWORKPROYECTO.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class SedesController : ControllerBase
 {
     private readonly IServices _services;

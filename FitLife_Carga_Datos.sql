@@ -9122,3 +9122,29 @@ PRINT '>> Siguiente paso: ejecutar FitLife_Validacion.sql';
 
 
 
+USE FITLIFENETWORKdb;
+GO
+
+-- 1. Insertar Roles del Sistema
+INSERT INTO ROLES_SISTEMA (rol, descripcion) VALUES 
+('ROLE_GERENTE_GENERAL', 'Acceso total y reportes globales'),
+('ROLE_GERENTE_MIEMBROS', 'Gestión de socios, planes y contratos'),
+('ROLE_GERENTE_VENTAS', 'Gestión de stock, precios y cajas'),
+('ROLE_GERENTE_EQUIPAMIENTO', 'Gestión de máquinas y mantenimientos'),
+('ROLE_VENDEDOR', 'Ventas de mostrador y cobros'),
+('ROLE_TECNICO', 'Mantenimiento e incidencias de equipos');
+
+-- 2. Insertar Usuarios (clave en texto plano: 123456)
+INSERT INTO USUARIOS (nombre, contrasena) VALUES
+('gerente.general', '123456'),
+('gerente.miembros', '123456'),
+('gerente.ventas', '123456'),
+('gerente.maquinas', '123456'),
+('vendedor.mostrador', '123456'),
+('tecnico.mantenimiento', '123456');
+
+-- 3. Asignar Roles a Usuarios (asumiendo IDs 1 al 6 autogenerados)
+INSERT INTO ROLUSUARIO (idusuario, idrol)
+VALUES (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6);
+GO
+

@@ -1,0 +1,1922 @@
+[
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.AccesosController",
+    "Method": "GetHistorial",
+    "RelativePath": "api/Accesos/historial/{idSocio}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSocio",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.AccesosController",
+    "Method": "GetListaEspera",
+    "RelativePath": "api/Accesos/lista-espera/{idClase}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idClase",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.AccesosController",
+    "Method": "PromoverListaEspera",
+    "RelativePath": "api/Accesos/lista-espera/promover/{idClase}",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idClase",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.AccesosController",
+    "Method": "ValidarAcceso",
+    "RelativePath": "api/Accesos/validar",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.AccesoValidacionRequestDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.AptosMedicosController",
+    "Method": "GetAll",
+    "RelativePath": "api/AptosMedicos",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.AptosMedicosController",
+    "Method": "Create",
+    "RelativePath": "api/AptosMedicos",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.AptoMedicoCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.AuditoriaController",
+    "Method": "GetAccesosDenegados",
+    "RelativePath": "api/Auditoria/accesos-denegados",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.AuditoriaController",
+    "Method": "GetCambiosEstadoSocio",
+    "RelativePath": "api/Auditoria/cambios-estado-socio",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.AuditoriaController",
+    "Method": "GetEquipamiento",
+    "RelativePath": "api/Auditoria/equipamiento",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.AuthController",
+    "Method": "Login",
+    "RelativePath": "api/Auth/login",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "loginRequest",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.UserLoginDTO",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "FITLIFENETWORKPROYECTO.DTO.LoginResponseDTO",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.CajasController",
+    "Method": "GetCajas",
+    "RelativePath": "api/Cajas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSede",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.CajasController",
+    "Method": "CreateCaja",
+    "RelativePath": "api/Cajas",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.CajaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.CategoriasProductosController",
+    "Method": "GetAll",
+    "RelativePath": "api/CategoriasProductos",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.CategoriasProductosController",
+    "Method": "Create",
+    "RelativePath": "api/CategoriasProductos",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.CategoriaProductoCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.CategoriasProductosController",
+    "Method": "GetById",
+    "RelativePath": "api/CategoriasProductos/{idCategoria}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idCategoria",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.CierresCajaController",
+    "Method": "GetCierres",
+    "RelativePath": "api/CierresCaja",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idCaja",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.CierresCajaController",
+    "Method": "CreateCierre",
+    "RelativePath": "api/CierresCaja",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.CierreCajaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.CierresCajaController",
+    "Method": "GetById",
+    "RelativePath": "api/CierresCaja/{idCierre}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idCierre",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.CierresCajaController",
+    "Method": "UpdateCierre",
+    "RelativePath": "api/CierresCaja/{idCierre}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idCierre",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.CierreCajaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.CierresCajaController",
+    "Method": "DeleteCierre",
+    "RelativePath": "api/CierresCaja/{idCierre}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idCierre",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ComprasController",
+    "Method": "GetCompras",
+    "RelativePath": "api/Compras",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSede",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ComprasController",
+    "Method": "CreateCompra",
+    "RelativePath": "api/Compras",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.CompraStockCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ContratosController",
+    "Method": "GetContratos",
+    "RelativePath": "api/Contratos",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSocio",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ContratosController",
+    "Method": "CreateContrato",
+    "RelativePath": "api/Contratos",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.ContratoMembresiaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ContratosController",
+    "Method": "GetContratoById",
+    "RelativePath": "api/Contratos/{idContrato}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idContrato",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ContratosController",
+    "Method": "UpdateContrato",
+    "RelativePath": "api/Contratos/{idContrato}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idContrato",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.ContratoMembresiaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ContratosController",
+    "Method": "DeleteContrato",
+    "RelativePath": "api/Contratos/{idContrato}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idContrato",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ContratosController",
+    "Method": "RenovarContrato",
+    "RelativePath": "api/Contratos/{idContrato}/renovar",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idContrato",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.ContratoMembresiaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ConveniosController",
+    "Method": "GetConvenios",
+    "RelativePath": "api/Convenios",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ConveniosController",
+    "Method": "CreateConvenio",
+    "RelativePath": "api/Convenios",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.ConvenioEmpresaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ConveniosController",
+    "Method": "GetById",
+    "RelativePath": "api/Convenios/{idConvenio}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idConvenio",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ConveniosController",
+    "Method": "UpdateConvenio",
+    "RelativePath": "api/Convenios/{idConvenio}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idConvenio",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.ConvenioEmpresaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ConveniosController",
+    "Method": "DeleteConvenio",
+    "RelativePath": "api/Convenios/{idConvenio}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idConvenio",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.CuotasController",
+    "Method": "CobrarCuota",
+    "RelativePath": "api/Cuotas/cobrar",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.PagoCuotaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.CuotasController",
+    "Method": "GetHistorial",
+    "RelativePath": "api/Cuotas/historial",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idCobro",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "idSocio",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.CuotasController",
+    "Method": "GetCuotasPendientes",
+    "RelativePath": "api/Cuotas/pendientes",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSocio",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.DashboardController",
+    "Method": "GetAccesosDenegados",
+    "RelativePath": "api/Dashboard/accesos-denegados",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.DashboardController",
+    "Method": "GetControlAptosMedicos",
+    "RelativePath": "api/Dashboard/aptos-medicos",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.DashboardController",
+    "Method": "GetCostosMantenimiento",
+    "RelativePath": "api/Dashboard/costos-mantenimiento",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.DashboardController",
+    "Method": "GetEstadoCuentaSocios",
+    "RelativePath": "api/Dashboard/estado-cuenta-socios",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.DashboardController",
+    "Method": "GetMembresiasVigentes",
+    "RelativePath": "api/Dashboard/membresias-vigentes",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.DashboardController",
+    "Method": "GetOcupacionClases",
+    "RelativePath": "api/Dashboard/ocupacion-clases",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.DashboardController",
+    "Method": "GetRecaudacionSede",
+    "RelativePath": "api/Dashboard/recaudacion-sede",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "anio",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "mes",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.DashboardController",
+    "Method": "GetRentabilidadConvenios",
+    "RelativePath": "api/Dashboard/rentabilidad-convenios",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "estado",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.DashboardController",
+    "Method": "GetTopProductos",
+    "RelativePath": "api/Dashboard/top-productos",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "anio",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.DevolucionesController",
+    "Method": "GetDevoluciones",
+    "RelativePath": "api/Devoluciones",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idVenta",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.DevolucionesController",
+    "Method": "CreateDevolucion",
+    "RelativePath": "api/Devoluciones",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.DevolucionVentaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.EmpleadosController",
+    "Method": "GetEmpleados",
+    "RelativePath": "api/Empleados",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSede",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "idRol",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.EmpleadosController",
+    "Method": "CreateEmpleado",
+    "RelativePath": "api/Empleados",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.EmpleadoCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.EquiposController",
+    "Method": "GetEquipos",
+    "RelativePath": "api/Equipos",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSede",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.EstadosReclamoController",
+    "Method": "GetAll",
+    "RelativePath": "api/EstadosReclamo",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.EstadosReclamoController",
+    "Method": "Create",
+    "RelativePath": "api/EstadosReclamo",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.EstadoReclamoCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.EstadosReclamoController",
+    "Method": "GetById",
+    "RelativePath": "api/EstadosReclamo/{idEstadoReclamo}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEstadoReclamo",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.FormasPagoController",
+    "Method": "GetAll",
+    "RelativePath": "api/FormasPago",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.FormasPagoController",
+    "Method": "Create",
+    "RelativePath": "api/FormasPago",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.FormaPagoCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.FormasPagoController",
+    "Method": "GetById",
+    "RelativePath": "api/FormasPago/{idFormaPago}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idFormaPago",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.GeografiaController",
+    "Method": "GetBarrios",
+    "RelativePath": "api/Geografia/barrios",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idLocalidad",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.GeografiaController",
+    "Method": "CreateBarrio",
+    "RelativePath": "api/Geografia/barrios",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.BarrioCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.GeografiaController",
+    "Method": "GetBarrioById",
+    "RelativePath": "api/Geografia/barrios/{idBarrio}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idBarrio",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.GeografiaController",
+    "Method": "GetCalles",
+    "RelativePath": "api/Geografia/calles",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idBarrio",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.GeografiaController",
+    "Method": "CreateCalle",
+    "RelativePath": "api/Geografia/calles",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.CalleCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.GeografiaController",
+    "Method": "GetCalleById",
+    "RelativePath": "api/Geografia/calles/{idCalle}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idCalle",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.GeografiaController",
+    "Method": "GetLocalidades",
+    "RelativePath": "api/Geografia/localidades",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idProvincia",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.GeografiaController",
+    "Method": "CreateLocalidad",
+    "RelativePath": "api/Geografia/localidades",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.LocalidadCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.GeografiaController",
+    "Method": "GetLocalidadById",
+    "RelativePath": "api/Geografia/localidades/{idLocalidad}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idLocalidad",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.GeografiaController",
+    "Method": "GetProvincias",
+    "RelativePath": "api/Geografia/provincias",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.GeografiaController",
+    "Method": "CreateProvincia",
+    "RelativePath": "api/Geografia/provincias",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.ProvinciaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.GeografiaController",
+    "Method": "GetProvinciaById",
+    "RelativePath": "api/Geografia/provincias/{idProvincia}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idProvincia",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Program\u002B\u003C\u003Ec",
+    "Method": "\u003C\u003CMain\u003E$\u003Eb__0_3",
+    "RelativePath": "api/health",
+    "HttpMethod": "GET",
+    "IsController": false,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": [
+      {
+        "Type": "System.Void",
+        "MediaTypes": [],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.IncidenciasController",
+    "Method": "GetIncidencias",
+    "RelativePath": "api/Incidencias",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSede",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.IncidenciasController",
+    "Method": "Create",
+    "RelativePath": "api/Incidencias",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.IncidenciaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.MantenimientoController",
+    "Method": "GetMantenimientos",
+    "RelativePath": "api/Mantenimiento",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idEquipo",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.MantenimientoController",
+    "Method": "CreateMantenimiento",
+    "RelativePath": "api/Mantenimiento",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.MantenimientoEquipamientoCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.MantenimientoController",
+    "Method": "GetById",
+    "RelativePath": "api/Mantenimiento/{idMantenimiento}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idMantenimiento",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.MantenimientoController",
+    "Method": "Update",
+    "RelativePath": "api/Mantenimiento/{idMantenimiento}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idMantenimiento",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.MantenimientoEquipamientoCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.MantenimientoController",
+    "Method": "Delete",
+    "RelativePath": "api/Mantenimiento/{idMantenimiento}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idMantenimiento",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.MovimientosStockController",
+    "Method": "GetMovimientos",
+    "RelativePath": "api/MovimientosStock",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSede",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "idProducto",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.MovimientosStockController",
+    "Method": "CreateMovimiento",
+    "RelativePath": "api/MovimientosStock",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.MovimientoStockCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.PersonasController",
+    "Method": "GetAll",
+    "RelativePath": "api/Personas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.PersonasController",
+    "Method": "Create",
+    "RelativePath": "api/Personas",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.PersonaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.PersonasController",
+    "Method": "GetById",
+    "RelativePath": "api/Personas/{idPersona}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idPersona",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.PlanesController",
+    "Method": "GetPlanes",
+    "RelativePath": "api/Planes",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ProductosController",
+    "Method": "GetProductos",
+    "RelativePath": "api/Productos",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSede",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ProductosController",
+    "Method": "Create",
+    "RelativePath": "api/Productos",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.ProductoCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ProductosController",
+    "Method": "GetById",
+    "RelativePath": "api/Productos/{idProducto}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idProducto",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ProductosController",
+    "Method": "Update",
+    "RelativePath": "api/Productos/{idProducto}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idProducto",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.ProductoCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ProductosController",
+    "Method": "Delete",
+    "RelativePath": "api/Productos/{idProducto}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idProducto",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ProductosController",
+    "Method": "GetStockPorSede",
+    "RelativePath": "api/Productos/stock",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSede",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.PromocionesController",
+    "Method": "GetPromociones",
+    "RelativePath": "api/Promociones",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.PromocionesController",
+    "Method": "CreatePromocion",
+    "RelativePath": "api/Promociones",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.PromocionCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ProveedoresController",
+    "Method": "GetProveedores",
+    "RelativePath": "api/Proveedores",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ProveedoresController",
+    "Method": "CreateProveedor",
+    "RelativePath": "api/Proveedores",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.ProveedorCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ReservasController",
+    "Method": "GetAll",
+    "RelativePath": "api/Reservas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSocio",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ReservasController",
+    "Method": "Create",
+    "RelativePath": "api/Reservas",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.ReservaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ReservasController",
+    "Method": "GetById",
+    "RelativePath": "api/Reservas/{idReserva}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idReserva",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ReservasController",
+    "Method": "Update",
+    "RelativePath": "api/Reservas/{idReserva}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idReserva",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.ReservaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ReservasController",
+    "Method": "Delete",
+    "RelativePath": "api/Reservas/{idReserva}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idReserva",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.ReservasController",
+    "Method": "GetClases",
+    "RelativePath": "api/Reservas/clases",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.RolesController",
+    "Method": "GetAll",
+    "RelativePath": "api/Roles",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.RolesController",
+    "Method": "Create",
+    "RelativePath": "api/Roles",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.RoleCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.RolesController",
+    "Method": "GetById",
+    "RelativePath": "api/Roles/{idRol}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idRol",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.RutinasController",
+    "Method": "GetRutinas",
+    "RelativePath": "api/Rutinas",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSocio",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "idEntrenador",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.RutinasController",
+    "Method": "CreateRutina",
+    "RelativePath": "api/Rutinas",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.RutinaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.SedesController",
+    "Method": "GetAll",
+    "RelativePath": "api/Sedes",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.SedesController",
+    "Method": "Create",
+    "RelativePath": "api/Sedes",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.SedeCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.SedesController",
+    "Method": "GetById",
+    "RelativePath": "api/Sedes/{idSede}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSede",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.SociosController",
+    "Method": "GetAll",
+    "RelativePath": "api/Socios",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.SociosController",
+    "Method": "Create",
+    "RelativePath": "api/Socios",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.SocioCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.SociosController",
+    "Method": "GetById",
+    "RelativePath": "api/Socios/{idSocio}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSocio",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.SociosController",
+    "Method": "Update",
+    "RelativePath": "api/Socios/{idSocio}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSocio",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.SocioCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.SociosController",
+    "Method": "Delete",
+    "RelativePath": "api/Socios/{idSocio}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSocio",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.SociosController",
+    "Method": "CreateSocioConContrato",
+    "RelativePath": "api/Socios/alta-con-contrato",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.SocioConContratoCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.TransferenciasController",
+    "Method": "GetTransferencias",
+    "RelativePath": "api/Transferencias",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSede",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.TransferenciasController",
+    "Method": "CreateTransferencia",
+    "RelativePath": "api/Transferencias",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.TransferenciaStockCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.TransferenciasController",
+    "Method": "GetById",
+    "RelativePath": "api/Transferencias/{idTransferencia}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idTransferencia",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.TransferenciasController",
+    "Method": "UpdateTransferencia",
+    "RelativePath": "api/Transferencias/{idTransferencia}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idTransferencia",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.TransferenciaStockCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.TransferenciasController",
+    "Method": "DeleteTransferencia",
+    "RelativePath": "api/Transferencias/{idTransferencia}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idTransferencia",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.TurnosController",
+    "Method": "GetTurnos",
+    "RelativePath": "api/Turnos",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idSocio",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      },
+      {
+        "Name": "idProfesional",
+        "Type": "System.Nullable\u00601[[System.Int32, System.Private.CoreLib, Version=10.0.0.0, Culture=neutral, PublicKeyToken=7cec85d7bea7798e]]",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.TurnosController",
+    "Method": "CreateTurno",
+    "RelativePath": "api/Turnos",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.TurnoCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.TurnosController",
+    "Method": "GetById",
+    "RelativePath": "api/Turnos/{idTurno}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idTurno",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.TurnosController",
+    "Method": "UpdateTurno",
+    "RelativePath": "api/Turnos/{idTurno}",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idTurno",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.TurnoCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.TurnosController",
+    "Method": "DeleteTurno",
+    "RelativePath": "api/Turnos/{idTurno}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "idTurno",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.VentasController",
+    "Method": "Registrar",
+    "RelativePath": "api/Ventas",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "dto",
+        "Type": "FITLIFENETWORKPROYECTO.DTO.VentaCreateDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]

@@ -3,9 +3,14 @@ using FITLIFENETWORKPROYECTO.Models.Context;
 using FITLIFENETWORKPROYECTO.Repositories;
 using FITLIFENETWORKPROYECTO.Repositorys;
 using FITLIFENETWORKPROYECTO.Repositorys.Interfaces;
+using FITLIFENETWORKPROYECTO.Repository;
+using FITLIFENETWORKPROYECTO.Repository.Interfaces;
 using FITLIFENETWORKPROYECTO.Services;
 using FITLIFENETWORKPROYECTO.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,6 +22,7 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'DefaultConnection'.");
@@ -26,6 +32,26 @@ builder.Services.AddDbContext<FITLIFENETWORKDbContext>(options =>
 
 builder.Services.AddScoped<IRepository, RepositoryFitLife>();
 builder.Services.AddScoped<IServices, ServicesFIT>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+
+// Configurar JWT
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var key = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key no configurada"));
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidAudience = jwtSettings["Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(key)
+        };
+    });
 
 var app = builder.Build();
 
@@ -35,8 +61,26 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
-app.UseHttpsRedirection();
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+app.UseDefaultFiles();
+app.UseStaticFiles();
+app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("/api/health", () => Results.Ok(new
+{
+    status = "ok",
+    message = "FitLife Network backend activo",
+    timestampUtc = DateTime.UtcNow
+}));
+
 app.MapControllers();
 
 app.Run();
+
+

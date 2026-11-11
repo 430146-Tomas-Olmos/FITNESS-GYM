@@ -1,5 +1,6 @@
 using FITLIFENETWORKPROYECTO.DTO;
 using FITLIFENETWORKPROYECTO.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,6 +8,7 @@ namespace FITLIFENETWORKPROYECTO.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "ROLE_GERENTE_GENERAL,ROLE_GERENTE_MIEMBROS")]
 public class AccesosController : ControllerBase
 {
     private readonly IServices _services;

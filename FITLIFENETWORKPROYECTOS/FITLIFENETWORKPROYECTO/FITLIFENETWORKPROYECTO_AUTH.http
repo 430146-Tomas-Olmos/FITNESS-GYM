@@ -1,0 +1,36 @@
+### FitLife Network - Authentication API
+
+# Variables
+@baseUrl = https://localhost:7XXX
+@token = 
+
+### Login endpoint - Get JWT Token
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre": "gerente.general",
+  "contrasena": "123456"
+}
+
+### Example: Login as Gerente Miembros
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre": "gerente.miembros",
+  "contrasena": "123456"
+}
+
+### Example: Login as Vendedor
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "nombre": "vendedor.mostrador",
+  "contrasena": "123456"
+}
+
+### Protected endpoint example - Get Envios (replace with your actual endpoint)
+GET {{baseUrl}}/api/envios
+Authorization: Bearer {{token}}

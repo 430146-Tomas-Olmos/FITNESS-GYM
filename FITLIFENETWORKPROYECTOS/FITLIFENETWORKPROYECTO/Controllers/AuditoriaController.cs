@@ -1,10 +1,12 @@
 using FITLIFENETWORKPROYECTO.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FITLIFENETWORKPROYECTO.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "ROLE_GERENTE_GENERAL,ROLE_GERENTE_MIEMBROS,ROLE_GERENTE_VENTAS,ROLE_GERENTE_EQUIPAMIENTO")]
 public class AuditoriaController : ControllerBase
 {
     private readonly IServices _services;
