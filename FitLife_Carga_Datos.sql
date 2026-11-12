@@ -1,21 +1,48 @@
 ﻿/* =============================================================================
-   FITLIFE NETWORK  -  CARGA COMPLETA DE DATOS (base vacía)            [49 tablas | 8,711 filas]
+   FITLIFE NETWORK  -  CARGA UNIFICADA DE DATOS              [61 tablas | 11,332 filas insertadas]
    -----------------------------------------------------------------------------
-   Requisitos : ejecutar DESPUÉS de crear la base con FitLifeNetwork.sql (estructura).
-   No elimina ni crea la base. No desactiva restricciones. No usa IDENTITY_INSERT.
-   Los IDENTITY se generan normalmente (1..N) y las claves foráneas usan esos ids
-   porque las tablas se cargan en orden de dependencia y fila por fila.
-
-   Fechas     : relativas a GETDATE() (aptos, accesos, cuotas, premios, reservas,
-                turnos, incidencias...) salvo ventas/compras/historial de productos,
-                que son fijas (ventas 2026 + último trimestre de 2025).
-                Todos los literales son ISO (YYYYMMDD / YYYY-MM-DDThh:mm:ss): no
-                dependen de SET DATEFORMAT ni del idioma de la sesión.
-   Seguridad  : una sola transacción con SET XACT_ABORT ON. Si CUALQUIER sentencia
-                falla se revierte todo y SQL Server informa el número de línea.
-                Si el error se produce, RECREÁ la base antes de reintentar
-                (los IDENTITY no se revierten con un ROLLBACK).
-   Codificación: guardar/abrir como UTF-8 con BOM (hay tildes y eñes).
+   Contenido  : 49 tablas de negocio (8,711 filas) + 9 tablas operativas/financieras/
+                de auditoria (2,603 filas) + 3 tablas de seguridad web (18 filas)
+                = 11,332 filas INSERTADAS por este script (INSERT ... VALUES o INSERT ... SELECT).
+   Triggers   : ademas, los triggers TR_RegistrarMovimientosStock / TR_ActualizarStockVenta
+                generan filas de MOVIMIENTOS_STOCK que NO estan en esas 11,332: una ENTRADA
+                por cada fila de STOCK_SEDE (254) y una SALIDA por cada par sede/producto de
+                cada INSERT de DETALLE_VENTAS (319 en los 2 INSERT del script) = 573.
+                Total esperado tras la carga: 11,332 + 573 = 11,905 filas. El script informa
+                por PRINT los valores reales de la ejecucion.
+   Requisito  : ejecutar sobre la base vacia creada con el script de estructura
+                (FitLifeNetwork.sql). No elimina ni crea la base. No desactiva
+                restricciones ni triggers. No usa IDENTITY_INSERT: los IDENTITY se
+                generan normalmente (1..N) y las claves foraneas usan esos ids porque
+                las tablas se cargan en orden de dependencia y fila por fila.
+   Orden      : guardas de base vacia (50001-50002) -> BEGIN TRANSACTION -> 49 tablas
+                base -> control de conteos (50003) -> guardas complementarias
+                (50011-50014) -> 9 tablas complementarias -> conteos e integridad
+                contable/stock/equipamiento (50015, 50021-50032) -> vinculo de las salidas
+                automaticas de venta con su venta (50033-50034) -> seguridad web
+                (ROLES_SISTEMA, USUARIOS, ROLUSUARIO; controles 50041-50043) -> COMMIT.
+                Todo dentro de BEGIN TRY ... END TRY; BEGIN CATCH hace ROLLBACK, restaura la
+                sesion y vuelve a lanzar el error ORIGINAL (THROW;) sin ocultarlo.
+   Fechas     : relativas a GETDATE() (@hoy / @mes0 / @dm, declaradas UNA sola vez)
+                salvo ventas/compras/historial de productos, que son fijas. Todos los
+                literales son ISO (YYYYMMDD / YYYY-MM-DDThh:mm:ss).
+   Sesion     : SESSION_CONTEXT('usuario') = 'carga_inicial' se fija antes de cargar para que
+                TR_RegistrarMovimientosStock no deje usuario_sistema en NULL. Al terminar (con
+                exito, con error, o en un lote final de seguridad) se restaura el valor que
+                tenia la conexion (normalmente ninguno): no queda activo 'carga_inicial'.
+   NULL       : los NULL restantes son funcionales (cuotas impagas, cajas abiertas,
+                accesos permitidos sin motivo, socios sin convenio, ventas anonimas,
+                reclamos edilicios sin equipo, mantenimientos internos, movimientos de stock
+                que agrupan varias ventas o no nacen de una venta, etc.).
+   Seguridad  : UNA sola transaccion y UN solo lote (sin GO entre BEGIN y COMMIT), con
+                SET XACT_ABORT ON. Si CUALQUIER sentencia o control falla se revierte todo
+                (incluida la seguridad web) y SQL Server informa el numero de linea.
+                Si ocurre un error, RECREE la base antes de reintentar (los IDENTITY
+                no se revierten con un ROLLBACK). Una base ya cargada o parcialmente
+                usada es rechazada por las guardas 50001/50002, asi que no se duplican datos.
+   Claves     : los usuarios web se cargan con la clave inicial '123456' en texto plano
+                (ver advertencia en la seccion 3).
+   Codificacion: guardar/abrir como UTF-8 con BOM (hay tildes y enies).
    ============================================================================= */
 USE FITLIFENETWORKdb;
 GO
@@ -23,19 +50,31 @@ GO
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 
-/* Anclas de fecha: todo lo "relativo" se calcula a partir de estas tres variables */
+/* SESSION_CONTEXT('usuario'): los triggers de stock lo leen para completar usuario_sistema.
+   Se guarda el valor previo de la conexion, se fija 'carga_inicial' antes de cargar y se
+   RESTAURA al terminar: en el camino de exito, en el CATCH y, como red de seguridad, en el
+   lote final (por si un error abortara el lote sin pasar por el CATCH). No se usa
+   @read_only = 1, para poder restaurarlo. */
+DECLARE @ctx_previo NVARCHAR(128) = CONVERT(NVARCHAR(128), SESSION_CONTEXT(N'usuario'));
+DECLARE @confirmada BIT = 0;     -- pasa a 1 recien despues del COMMIT
+EXEC sys.sp_set_session_context @key = N'usuario', @value = N'carga_inicial';
+
+BEGIN TRY
+
+/* Anclas de fecha: todo lo "relativo" se calcula a partir de estas tres variables.
+   Se declaran UNA sola vez y viven en el mismo lote hasta el COMMIT (no hay GO intermedio). */
 DECLARE @hoy  DATETIME = DATEADD(DAY,   DATEDIFF(DAY,   0, GETDATE()), 0);   -- hoy 00:00
-DECLARE @mes0 DATETIME = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0);   -- 1er día del mes actual
-DECLARE @dm   INT      = CASE WHEN DAY(@hoy) = 1 THEN 1 ELSE DAY(@hoy) - 1 END; -- días del mes ya transcurridos (mín. 1)
+DECLARE @mes0 DATETIME = DATEADD(MONTH, DATEDIFF(MONTH, 0, GETDATE()), 0);   -- 1er dia del mes actual
+DECLARE @dm   INT      = CASE WHEN DAY(@hoy) = 1 THEN 1 ELSE DAY(@hoy) - 1 END; -- dias del mes ya transcurridos (min. 1)
 
 /* Guarda 1: ninguna tabla debe tener datos */
 IF EXISTS (SELECT 1 FROM sys.dm_db_partition_stats
            WHERE index_id IN (0, 1) AND row_count > 0 AND OBJECTPROPERTY(object_id, 'IsUserTable') = 1)
-    THROW 50001, 'La base ya contiene datos. Elimine y recree la base con FitLifeNetwork.sql antes de ejecutar esta carga.', 1;
+    THROW 50001, 'La base ya contiene datos. Elimine y recree la base (script de estructura FitLifeNetwork.sql) antes de ejecutar esta carga.', 1;
 
 /* Guarda 2: ningún IDENTITY debe haberse usado antes (las claves foráneas de este script asumen ids 1..N) */
 IF EXISTS (SELECT 1 FROM sys.identity_columns ic JOIN sys.tables t ON t.object_id = ic.object_id WHERE ic.last_value IS NOT NULL)
-    THROW 50002, 'Hay columnas IDENTITY que ya generaron valores (carga previa revertida). Recree la base con FitLifeNetwork.sql.', 1;
+    THROW 50002, 'Hay columnas IDENTITY que ya generaron valores (carga previa revertida). Recree la base (script de estructura FitLifeNetwork.sql).', 1;
 
 BEGIN TRANSACTION;
 
@@ -548,7 +587,7 @@ INSERT INTO PERSONAS (dni, nombre, apellido, fecha_nacimiento, estado_civil, ocu
 ('33880433', 'Celeste', 'Sandoval', '19870418', 'Soltera', 'Licenciada en Nutrición', '+54 9 353 461-3792', 'celeste.sandoval@gmail.com'),
 ('37961593', 'Adrián', 'Barrionuevo', '19950313', 'En pareja', 'Técnico en mantenimiento de equipos', '+54 9 353 615-3185', 'adrian.barrionuevo@hotmail.com'),
 ('29655553', 'Tomás', 'Ponce', '19821006', 'Casado', 'Administrador de empresas', '+54 9 3564 41-7669', 'tomas.ponce@gmail.com'),
-('36593856', 'Agustina', 'Paz', '19940910', 'Casada', 'Recepcionista', NULL, 'agustina.paz@outlook.com'),
+('36593856', 'Agustina', 'Paz', '19940910', 'Casada', 'Recepcionista', '+54 9 3564 46-9278', 'agustina.paz@outlook.com'),
 ('34263099', 'Agustín', 'Barrionuevo', '19880913', 'Casado', 'Profesor de Educación Física', '+54 9 3564 65-6074', 'agustin.barrionuevo@outlook.com'),
 ('32901546', 'Ayelén', 'Álvarez', '19870815', 'Casada', 'Administradora de empresas', '+54 9 341 698-6077', 'ayelen.alvarez@gmail.com'),
 ('31694851', 'Pilar', 'Rodríguez', '19850806', 'En pareja', 'Recepcionista', '+54 9 341 684-4468', 'pilar.rodriguez@hotmail.com'),
@@ -566,7 +605,7 @@ INSERT INTO PERSONAS (dni, nombre, apellido, fecha_nacimiento, estado_civil, ocu
 ('41963234', 'Antonella', 'Quiroga', '19991109', 'Soltera', 'Licenciada en Nutrición', '+54 9 342 680-9250', 'antonella.quiroga@yahoo.com.ar'),
 ('24569193', 'Brian', 'Ojeda', '19750110', 'Casado', 'Gerente de sucursal', '+54 9 221 624-1105', 'brian.ojeda@gmail.com'),
 ('40767659', 'Candela', 'Castro', '19970107', 'En pareja', 'Recepcionista', '+54 9 221 690-5154', 'candela.castro@gmail.com'),
-('32513694', 'Lucas', 'Videla', '19860822', 'Casado', 'Entrenador personal', NULL, 'lucas.videla@gmail.com'),
+('32513694', 'Lucas', 'Videla', '19860822', 'Casado', 'Entrenador personal', '+54 9 221 250-7266', 'lucas.videla@gmail.com'),
 ('41507876', 'Ayelén', 'Rojas', '19980907', 'En pareja', 'Entrenadora personal', '+54 9 221 457-5819', 'ayelen.rojas@hotmail.com'),
 ('37258818', 'Paula', 'Cardozo', '19950127', 'Soltera', 'Licenciada en Nutrición', '+54 9 221 622-4488', 'paula.cardozo@yahoo.com.ar'),
 ('27840851', 'Matías', 'Montenegro', '19810916', 'Viudo', 'Técnico en mantenimiento de equipos', '+54 9 221 442-6298', 'matias.montenegro@gmail.com'),
@@ -578,7 +617,7 @@ INSERT INTO PERSONAS (dni, nombre, apellido, fecha_nacimiento, estado_civil, ocu
 ('20713168', 'Raúl', 'Cardozo', '19691130', 'Divorciado', 'Técnico en mantenimiento de equipos', '+54 9 223 466-8473', 'raul.cardozo@gmail.com'),
 ('30407998', 'Brenda', 'Montiel', '19850201', 'Casada', 'Personal de limpieza', '+54 9 223 410-8943', 'brenda.montiel@yahoo.com.ar'),
 ('34217617', 'Esteban', 'Giménez', '19890316', 'Soltero', 'Administrador de empresas', '+54 9 249 676-6038', 'esteban.gimenez@gmail.com'),
-('34919909', 'Candela', 'Medina', '19901114', 'Divorciada', 'Recepcionista', NULL, 'candela.medina@gmail.com'),
+('34919909', 'Candela', 'Medina', '19901114', 'Divorciada', 'Recepcionista', '+54 9 249 295-2897', 'candela.medina@gmail.com'),
 ('39436442', 'Luciana', 'Medina', '19980129', 'Soltera', 'Entrenadora personal', '+54 9 249 412-8819', 'luciana.medina@gmail.com'),
 ('38588544', 'Marisol', 'Palacios', '19970313', 'En pareja', 'Empleada administrativa', '+54 9 353 464-1586', 'marisol.palacios@outlook.com'),
 ('20479338', 'Sebastián', 'Ramírez', '19690219', 'Casado', 'Enfermero', '+54 9 342 408-5961', 'sebastian.ramirez@hotmail.com'),
@@ -596,7 +635,7 @@ INSERT INTO PERSONAS (dni, nombre, apellido, fecha_nacimiento, estado_civil, ocu
 ('27012878', 'Rocío', 'Medina', '19770709', 'Casada', 'Vendedora', '+54 9 223 573-6597', 'rocio.medina@outlook.com'),
 ('32062764', 'Mariano', 'Barrionuevo', '19860625', 'Soltero', 'Técnico electrónico', '+54 9 341 617-4405', 'mariano.barrionuevo@hotmail.com'),
 ('30171494', 'Carlos', 'Vega', '19820105', 'Casado', 'Enfermero', '+54 9 341 469-8391', 'carlos.vega@gmail.com'),
-('36183488', 'Bianca', 'Ruiz', '19930910', 'Soltera', 'Ama de casa', NULL, 'bianca.ruiz@gmail.com'),
+('36183488', 'Bianca', 'Ruiz', '19930910', 'Soltera', 'Ama de casa', '+54 9 221 289-8133', 'bianca.ruiz@gmail.com'),
 ('32997820', 'Hernán', 'Ríos', '19870526', 'Soltero', 'Médico', '+54 9 249 471-9434', 'hernan.rios@gmail.com'),
 ('46824026', 'Damián', 'Costa', '20080705', 'En pareja', 'Técnico electrónico', '+54 9 221 629-3644', 'damian.costa@outlook.com'),
 ('44914748', 'Belén', 'Roldán', '20050119', 'En pareja', 'Diseñadora gráfica', '+54 9 358 434-5941', 'belen.roldan@gmail.com'),
@@ -620,11 +659,11 @@ INSERT INTO PERSONAS (dni, nombre, apellido, fecha_nacimiento, estado_civil, ocu
 ('24806272', 'Sofía', 'Domínguez', '19760213', 'Casada', 'Abogada', '+54 9 341 555-5825', 'sofia.dominguez@hotmail.com'),
 ('26765360', 'Franco', 'Medina', '19790529', 'Divorciado', 'Enfermero', '+54 9 221 580-2405', 'franco.medina@outlook.com'),
 ('36047193', 'Carlos', 'Benítez', '19930325', 'En pareja', 'Diseñador gráfico', '+54 9 341 472-8388', 'carlos.benitez@gmail.com'),
-('32187730', 'Candela', 'Altamirano', '19870920', 'Soltera', 'Emprendedora', NULL, 'candela.altamirano@hotmail.com'),
+('32187730', 'Candela', 'Altamirano', '19870920', 'Soltera', 'Emprendedora', '+54 9 3564 51-3881', 'candela.altamirano@hotmail.com'),
 ('40436499', 'Mariana', 'Mancini', '19990830', 'Casada', 'Diseñadora gráfica', '+54 9 223 442-6638', 'mariana.mancini@gmail.com'),
 ('34568189', 'Soledad', 'Bravo', '19910919', 'Soltera', 'Comerciante', '+54 9 221 528-7361', 'soledad.bravo@yahoo.com.ar'),
 ('36389058', 'Kevin', 'Rodríguez', '19911114', 'Soltero', 'Contador', '+54 9 351 511-8277', 'kevin.rodriguez@hotmail.com'),
-('47269903', 'María', 'Díaz', '20080423', 'Soltera', 'Vendedora', '+54 9 223 408-9269', NULL),
+('47269903', 'María', 'Díaz', '20080423', 'Soltera', 'Vendedora', '+54 9 223 408-9269', 'maria.diaz@gmail.com'),
 ('31819394', 'Mariana', 'Luna', '19870710', 'Soltera', 'Docente', '+54 9 221 578-9198', 'mariana.luna@outlook.com'),
 ('42751740', 'Claudia', 'Ortiz', '20031218', 'Casada', 'Agrónoma', '+54 9 351 658-5906', 'claudia.ortiz@gmail.com'),
 ('39524896', 'Agustina', 'Fernández', '19960507', 'Soltera', 'Analista de sistemas', '+54 9 341 404-7979', 'agustina.fernandez@outlook.com'),
@@ -652,7 +691,7 @@ INSERT INTO PERSONAS (dni, nombre, apellido, fecha_nacimiento, estado_civil, ocu
 ('46852219', 'Adrián', 'Sandoval', '20080125', 'Soltero', 'Diseñador gráfico', '+54 9 3541 61-2430', 'adrian.sandoval@gmail.com'),
 ('30491450', 'Martina', 'Ríos', '19820923', 'Soltera', 'Peluquera', '+54 9 3541 64-4613', 'martina.rios@gmail.com'),
 ('40733194', 'Mariano', 'Moretti', '20000927', 'Casado', 'Psicólogo', '+54 9 249 458-5431', 'mariano.moretti@outlook.com'),
-('37532217', 'Pilar', 'Rojas', '19940718', 'Soltera', 'Emprendedora', NULL, 'pilar.rojas@gmail.com'),
+('37532217', 'Pilar', 'Rojas', '19940718', 'Soltera', 'Emprendedora', '+54 9 351 525-9895', 'pilar.rojas@gmail.com'),
 ('37205339', 'Gabriel', 'Serrano', '19940110', 'Casado', 'Periodista', '+54 9 341 420-4044', 'gabriel.serrano@gmail.com'),
 ('40410684', 'Alejandro', 'Ponce', '19980329', 'Soltero', 'Vendedor', '+54 9 249 437-8193', 'alejandro.ponce@yahoo.com.ar'),
 ('33140341', 'Adrián', 'Ponce', '19890501', 'Casado', 'Electricista', '+54 9 221 610-9278', 'adrian.ponce@gmail.com'),
@@ -684,12 +723,12 @@ INSERT INTO PERSONAS (dni, nombre, apellido, fecha_nacimiento, estado_civil, ocu
 ('34969829', 'Brenda', 'Aguirre', '19900901', 'Casada', 'Empleada bancaria', '+54 9 3541 40-7318', 'brenda.aguirre@hotmail.com'),
 ('46162179', 'Rodrigo', 'Ramírez', '20050424', 'Soltero', 'Estudiante', '+54 9 351 528-7784', 'rodrigo.ramirez@yahoo.com.ar'),
 ('42118071', 'Héctor', 'Figueroa', '19990928', 'Soltero', 'Estudiante', '+54 9 342 443-8001', 'hector.figueroa@hotmail.com'),
-('46717992', 'Belén', 'Silva', '20080727', 'Soltera', 'Estudiante', '+54 9 358 530-1187', NULL),
+('46717992', 'Belén', 'Silva', '20080727', 'Soltera', 'Estudiante', '+54 9 358 530-1187', 'belen.silva@gmail.com'),
 ('43165660', 'Mercedes', 'Rizzo', '20010301', 'Soltera', 'Arquitecta', '+54 9 221 570-6006', 'mercedes.rizzo@gmail.com'),
 ('35817148', 'Natalia', 'Correa', '19911203', 'Casada', 'Docente', '+54 9 341 693-1924', 'natalia.correa@gmail.com'),
 ('31013868', 'Bianca', 'Quiroga', '19841026', 'Casada', 'Comerciante', '+54 9 3541 53-6972', 'bianca.quiroga@yahoo.com.ar'),
 ('32659722', 'Walter', 'Benítez', '19870715', 'Casado', 'Ingeniero de Software', '+54 9 3541 60-7599', 'walter.benitez@gmail.com'),
-('47089056', 'Celeste', 'Ferrero', '20080901', 'Soltera', 'Mecánica', NULL, 'celeste.ferrero@gmail.com'),
+('47089056', 'Celeste', 'Ferrero', '20080901', 'Soltera', 'Mecánica', '+54 9 351 252-4792', 'celeste.ferrero@gmail.com'),
 ('36924679', 'Marcelo', 'Barrionuevo', '19920301', 'En pareja', 'Arquitecto', '+54 9 353 543-7328', 'marcelo.barrionuevo@yahoo.com.ar'),
 ('42173306', 'Gustavo', 'Vázquez', '20010611', 'Soltero', 'Enfermero', '+54 9 3541 59-7151', 'gustavo.vazquez@gmail.com'),
 ('46565298', 'Lucía', 'Figueroa', '20080531', 'Soltera', 'Estudiante', '+54 9 223 573-3852', 'lucia.figueroa@hotmail.com'),
@@ -8453,6 +8492,8 @@ INSERT INTO DETALLE_VENTAS (id_venta, id_producto, cantidad, precio_unitario_his
 (257, 2, 1, 88000.00),
 (258, 29, 3, 4500.00),
 (258, 28, 1, 1800.00);
+-- Limite del 1er INSERT de DETALLE_VENTAS (cada INSERT dispara una sola vez TR_ActualizarStockVenta); lo usa la seccion 2b
+DECLARE @ultimo_detalle_lote1 INT = (SELECT MAX(id_detalle_venta) FROM DETALLE_VENTAS);
 INSERT INTO DETALLE_VENTAS (id_venta, id_producto, cantidad, precio_unitario_historico) VALUES
 (258, 27, 1, 3000.00),
 (259, 9, 1, 34000.00),
@@ -9116,35 +9157,769 @@ IF EXISTS (
 )
     THROW 50003, 'La cantidad de filas cargadas no coincide con la esperada. Se revierte la carga.', 1;
 
-COMMIT TRANSACTION;
-PRINT '>> CARGA FINALIZADA CORRECTAMENTE: 8,711 filas en 49 tablas.';
-PRINT '>> Siguiente paso: ejecutar FitLife_Validacion.sql';
+/* =============================================================================
+   2. CARGA COMPLEMENTARIA (misma transaccion, mismas anclas @hoy / @mes0 / @dm)
+   ============================================================================= */
+PRINT '>> Carga base verificada (49 tablas, 8,711 filas). Iniciando carga complementaria...';
+
+/* Guarda 1: la carga base debe estar completa (los ids de este script dependen de ella) */
+IF (SELECT COUNT(*) FROM EMPLEADOS) <> 60
+   OR (SELECT COUNT(*) FROM CONTRATOS_MEMBRESIA) <> 459
+   OR (SELECT COUNT(*) FROM CUOTAS_COBROS) <> 1831
+   OR (SELECT COUNT(*) FROM VENTAS) <> 396
+   OR (SELECT COUNT(*) FROM DETALLE_VENTAS) <> 605
+   OR (SELECT COUNT(*) FROM STOCK_SEDE) <> 254
+   OR (SELECT COUNT(*) FROM EQUIPAMIENTO) <> 116
+   OR (SELECT COUNT(*) FROM MANTENIMIENTO_EQUIPAMIENTO) <> 109
+   OR (SELECT COUNT(*) FROM INCIDENCIAS_RECLAMOS) <> 58
+    THROW 50011, 'La carga base (49 tablas) no quedo completa dentro de la transaccion. Se revierte todo el script.', 1;
+
+/* Guarda 2: las 9 tablas de este script deben estar sin cargar.
+   MOVIMIENTOS_STOCK ya tiene filas generadas por el trigger TR_RegistrarMovimientosStock
+   durante la carga base (altas de stock y salidas por ventas); solo se controlan las propias. */
+IF EXISTS (SELECT 1 FROM CAJAS)
+   OR EXISTS (SELECT 1 FROM CIERRES_CAJA)
+   OR EXISTS (SELECT 1 FROM PAGOS_CUOTAS)
+   OR EXISTS (SELECT 1 FROM TRANSFERENCIAS_STOCK)
+   OR EXISTS (SELECT 1 FROM DETALLE_TRANSFERENCIAS)
+   OR EXISTS (SELECT 1 FROM DEVOLUCIONES_VENTA)
+   OR EXISTS (SELECT 1 FROM DETALLE_DEVOLUCIONES_VENTA)
+   OR EXISTS (SELECT 1 FROM AUDITORIA_EQUIPAMIENTO)
+   OR EXISTS (SELECT 1 FROM MOVIMIENTOS_STOCK WHERE id_venta IS NOT NULL OR observaciones LIKE 'Transferencia #%' OR observaciones LIKE 'Devolucion #%')
+    THROW 50012, 'Alguna tabla de la carga complementaria ya contiene datos antes de cargarla. Recree la base y ejecute este script una sola vez.', 1;
+
+/* Guarda 3: ningun IDENTITY de las tablas de este script debe haberse usado (los ids 1..N se asumen en los VALUES) */
+IF EXISTS (SELECT 1 FROM sys.identity_columns
+           WHERE last_value IS NOT NULL
+             AND object_id IN (OBJECT_ID('CAJAS'), OBJECT_ID('CIERRES_CAJA'), OBJECT_ID('PAGOS_CUOTAS'),
+                               OBJECT_ID('TRANSFERENCIAS_STOCK'), OBJECT_ID('DETALLE_TRANSFERENCIAS'),
+                               OBJECT_ID('DEVOLUCIONES_VENTA'), OBJECT_ID('DETALLE_DEVOLUCIONES_VENTA'),
+                               OBJECT_ID('AUDITORIA_EQUIPAMIENTO')))
+    THROW 50013, 'Hay columnas IDENTITY de las tablas complementarias que ya generaron valores. Recree la base y ejecute nuevamente este script.', 1;
+
+/* Guarda 4: integridad de las maestras sobre las que se apoya la carga (contratos con sede y plan, cuotas con contrato, ventas con sede) */
+IF EXISTS (SELECT 1 FROM CONTRATOS_MEMBRESIA cm
+           LEFT JOIN SEDES  s ON s.id_sede  = cm.id_sede
+           LEFT JOIN PLANES p ON p.id_plan  = cm.id_plan
+           WHERE s.id_sede IS NULL OR p.id_plan IS NULL)
+   OR EXISTS (SELECT 1 FROM CUOTAS_COBROS cc LEFT JOIN CONTRATOS_MEMBRESIA cm ON cm.id_contrato = cc.id_contrato WHERE cm.id_contrato IS NULL)
+   OR EXISTS (SELECT 1 FROM VENTAS v LEFT JOIN SEDES s ON s.id_sede = v.id_sede WHERE s.id_sede IS NULL)
+    THROW 50014, 'Se detectaron contratos sin sede/plan, cuotas sin contrato o ventas sin sede en las maestras cargadas. Se revierte todo el script.', 1;
+
+/* =============================================================================
+   1. GESTIÓN FINANCIERA Y CONTROL DE CAJAS
+   ============================================================================= */
+
+PRINT '>> 01/09  CAJAS  (379 filas)';  -- 369 cajas diarias cerradas (1 por sede y día con ventas) + 10 abiertas hoy
+/* Cajas históricas: una por sede y día con ventas. Abre el vendedor de la primera venta del día
+   (25 min antes) y cierra 25 min después de la última. El fondo de caja es fijo por sede. */
+INSERT INTO CAJAS (id_sede, id_empleado, fecha_apertura, saldo_inicial, fecha_cierre, estado)
+SELECT d.id_sede,
+       p.id_vendedor,
+       DATEADD(MINUTE, -25, d.primera_venta),
+       f.fondo,
+       DATEADD(MINUTE,  25, d.ultima_venta),
+       'CERRADA'
+FROM (SELECT v.id_sede,
+             CAST(v.fecha_hora_venta AS DATE) AS dia,
+             MIN(v.fecha_hora_venta) AS primera_venta,
+             MAX(v.fecha_hora_venta) AS ultima_venta
+      FROM VENTAS v
+      GROUP BY v.id_sede, CAST(v.fecha_hora_venta AS DATE)) d
+JOIN (VALUES (1, 30000.00), (2, 20000.00), (3, 20000.00), (4, 15000.00), (5, 15000.00),
+             (6, 30000.00), (7, 20000.00), (8, 25000.00), (9, 25000.00), (10, 15000.00)) AS f (id_sede, fondo)
+  ON f.id_sede = d.id_sede
+CROSS APPLY (SELECT TOP 1 v2.id_vendedor
+             FROM VENTAS v2
+             WHERE v2.id_sede = d.id_sede AND v2.fecha_hora_venta = d.primera_venta
+             ORDER BY v2.id_venta) p
+ORDER BY d.primera_venta, d.id_sede;
+
+/* Cajas abiertas hoy: una por sede, a cargo de la recepción (todavía sin cierre) */
+INSERT INTO CAJAS (id_sede, id_empleado, fecha_apertura, saldo_inicial, fecha_cierre, estado) VALUES
+(1, 2, DATEADD(MINUTE, 372, @hoy), 30000.00, NULL, 'ABIERTA'),
+(2, 11, DATEADD(MINUTE, 385, @hoy), 20000.00, NULL, 'ABIERTA'),
+(3, 18, DATEADD(MINUTE, 391, @hoy), 20000.00, NULL, 'ABIERTA'),
+(4, 24, DATEADD(MINUTE, 402, @hoy), 15000.00, NULL, 'ABIERTA'),
+(5, 29, DATEADD(MINUTE, 410, @hoy), 15000.00, NULL, 'ABIERTA'),
+(6, 32, DATEADD(MINUTE, 366, @hoy), 30000.00, NULL, 'ABIERTA'),
+(7, 41, DATEADD(MINUTE, 420, @hoy), 20000.00, NULL, 'ABIERTA'),
+(8, 46, DATEADD(MINUTE, 378, @hoy), 25000.00, NULL, 'ABIERTA'),
+(9, 53, DATEADD(MINUTE, 395, @hoy), 25000.00, NULL, 'ABIERTA'),
+(10, 59, DATEADD(MINUTE, 405, @hoy), 15000.00, NULL, 'ABIERTA');
+
+PRINT '>> 02/09  CIERRES_CAJA  (369 filas)';  -- un arqueo por cada caja cerrada
+/* Misma lógica que sp_CerrarCajaDiaria: total_ventas = ventas de la sede dentro de la ventana de la caja,
+   saldo_esperado = saldo_inicial + total_ventas, diferencia = saldo_real - saldo_esperado.
+   Faltantes/sobrantes puntuales y determinísticos (3 de cada 25 cajas). */
+INSERT INTO CIERRES_CAJA (id_caja, fecha_cierre, total_ventas, saldo_esperado, saldo_real, diferencia, observaciones)
+SELECT c.id_caja,
+       c.fecha_cierre,
+       t.total,
+       c.saldo_inicial + t.total,
+       c.saldo_inicial + t.total + x.dif,
+       x.dif,
+       CASE WHEN x.dif = 0 THEN 'Arqueo conforme, sin diferencias'
+            WHEN x.dif < 0 THEN 'Faltante de $' + CONVERT(VARCHAR(12), ABS(x.dif)) + ' detectado en el arqueo, pendiente de justificar'
+            ELSE 'Sobrante de $' + CONVERT(VARCHAR(12), x.dif) + ' detectado en el arqueo' END
+FROM CAJAS c
+CROSS APPLY (SELECT CAST(ISNULL(SUM(dv.cantidad * dv.precio_unitario_historico), 0) AS DECIMAL(10,2)) AS total
+             FROM VENTAS v
+             JOIN DETALLE_VENTAS dv ON dv.id_venta = v.id_venta
+             WHERE v.id_sede = c.id_sede
+               AND v.fecha_hora_venta >= c.fecha_apertura
+               AND v.fecha_hora_venta <= c.fecha_cierre) t
+CROSS APPLY (SELECT CAST(CASE c.id_caja % 25 WHEN 3 THEN -500.00 WHEN 11 THEN 300.00 WHEN 18 THEN -1200.00 ELSE 0.00 END AS DECIMAL(10,2)) AS dif) x
+WHERE c.estado = 'CERRADA'
+ORDER BY c.id_caja;
+
+PRINT '>> 03/09  PAGOS_CUOTAS  (1,570 filas)';  -- historial de cobros de cuotas
+/* (a) Cuotas pagadas en un único pago: mismo importe, forma de pago y fecha que la cuota */
+INSERT INTO PAGOS_CUOTAS (id_cobro, id_forma_pago, importe, fecha_pago, usuario_sistema)
+SELECT cc.id_cobro,
+       cc.id_forma_pago,
+       cc.monto,
+       cc.fecha_pago,
+       CASE WHEN cc.id_forma_pago IN (1, 2, 3) THEN 'recepcion_s' + RIGHT('0' + CAST(cm.id_sede AS VARCHAR(2)), 2)
+            ELSE 'sistema_cobranzas' END
+FROM CUOTAS_COBROS cc
+JOIN CONTRATOS_MEMBRESIA cm ON cm.id_contrato = cc.id_contrato
+WHERE cc.fecha_pago IS NOT NULL
+  AND NOT (cc.id_cobro % 19 = 0 AND cc.monto >= 20000 AND cc.numero_cuota > 1)
+ORDER BY cc.fecha_pago, cc.id_cobro;
+
+/* (b) Cuotas pagadas en dos partes (1 de cada 19, desde la 2ª cuota): mitad en efectivo 3 días antes
+       y el resto con la forma de pago de la cuota en la fecha de cancelación */
+INSERT INTO PAGOS_CUOTAS (id_cobro, id_forma_pago, importe, fecha_pago, usuario_sistema)
+SELECT cc.id_cobro,
+       CASE p.parte WHEN 1 THEN 1 ELSE cc.id_forma_pago END,
+       CASE p.parte WHEN 1 THEN CAST(ROUND(cc.monto / 2, 2) AS DECIMAL(10,2))
+                    ELSE cc.monto - CAST(ROUND(cc.monto / 2, 2) AS DECIMAL(10,2)) END,
+       CASE p.parte WHEN 1 THEN DATEADD(DAY, -3, cc.fecha_pago) ELSE cc.fecha_pago END,
+       CASE WHEN (CASE p.parte WHEN 1 THEN 1 ELSE cc.id_forma_pago END) IN (1, 2, 3)
+            THEN 'recepcion_s' + RIGHT('0' + CAST(cm.id_sede AS VARCHAR(2)), 2)
+            ELSE 'sistema_cobranzas' END
+FROM CUOTAS_COBROS cc
+JOIN CONTRATOS_MEMBRESIA cm ON cm.id_contrato = cc.id_contrato
+CROSS JOIN (VALUES (1), (2)) AS p (parte)
+WHERE cc.fecha_pago IS NOT NULL
+  AND cc.id_cobro % 19 = 0 AND cc.monto >= 20000 AND cc.numero_cuota > 1
+ORDER BY cc.fecha_pago, cc.id_cobro, p.parte;
+
+/* (c) Pagos parciales sobre cuotas vencidas e impagas de contratos ACTIVOS (quedan con saldo pendiente) */
+INSERT INTO PAGOS_CUOTAS (id_cobro, id_forma_pago, importe, fecha_pago, usuario_sistema) VALUES
+(64, 3, 7720.00, DATEADD(MINUTE, 691, DATEADD(DAY, -11, @hoy)), 'recepcion_s01'),
+(1120, 1, 9562.50, DATEADD(MINUTE, 709, DATEADD(DAY, -9, @hoy)), 'recepcion_s02'),
+(208, 2, 16000.00, DATEADD(MINUTE, 859, DATEADD(DAY, -8, @hoy)), 'recepcion_s09'),
+(442, 2, 12495.00, DATEADD(MINUTE, 680, DATEADD(DAY, -7, @hoy)), 'recepcion_s06'),
+(1017, 2, 14000.00, DATEADD(MINUTE, 788, DATEADD(DAY, -7, @hoy)), 'recepcion_s07'),
+(1179, 3, 9650.00, DATEADD(MINUTE, 882, DATEADD(DAY, -7, @hoy)), 'recepcion_s06'),
+(1616, 1, 19300.00, DATEADD(MINUTE, 1009, DATEADD(DAY, -4, @hoy)), 'recepcion_s03'),
+(1260, 1, 17833.34, DATEADD(MINUTE, 727, DATEADD(DAY, -3, @hoy)), 'recepcion_s03'),
+(1573, 1, 19000.00, DATEADD(MINUTE, 1036, DATEADD(DAY, -3, @hoy)), 'recepcion_s08'),
+(91, 1, 17833.34, DATEADD(MINUTE, 920, DATEADD(DAY, -2, @hoy)), 'recepcion_s06'),
+(313, 2, 14266.67, DATEADD(MINUTE, 902, DATEADD(DAY, -2, @hoy)), 'recepcion_s09'),
+(808, 4, 17548.00, DATEADD(MINUTE, 765, DATEADD(DAY, -1, @hoy)), 'sistema_cobranzas');
 
 
+/* =============================================================================
+   2. INVENTARIO, TRANSFERENCIAS Y DEVOLUCIONES
+   ============================================================================= */
+PRINT '>> 04/09  TRANSFERENCIAS_STOCK  (28 filas)';  -- estados: RECIBIDA / EN TRANSITO / PENDIENTE / CANCELADA
+INSERT INTO TRANSFERENCIAS_STOCK (id_sede_origen, id_sede_destino, fecha_solicitud, estado, usuario_sistema) VALUES
+(2, 5, DATEADD(MINUTE, 566, DATEADD(DAY, -130, @hoy)), 'RECIBIDA', 'gerencia_s02'),
+(3, 1, DATEADD(MINUTE, 781, DATEADD(DAY, -129, @hoy)), 'RECIBIDA', 'gerencia_s03'),
+(8, 10, DATEADD(MINUTE, 887, DATEADD(DAY, -125, @hoy)), 'RECIBIDA', 'gerencia_s08'),
+(4, 10, DATEADD(MINUTE, 865, DATEADD(DAY, -100, @hoy)), 'RECIBIDA', 'gerencia_s04'),
+(1, 10, DATEADD(MINUTE, 906, DATEADD(DAY, -91, @hoy)), 'CANCELADA', 'gerencia_s01'),
+(10, 8, DATEADD(MINUTE, 985, DATEADD(DAY, -88, @hoy)), 'RECIBIDA', 'gerencia_s10'),
+(6, 2, DATEADD(MINUTE, 701, DATEADD(DAY, -81, @hoy)), 'RECIBIDA', 'gerencia_s06'),
+(3, 5, DATEADD(MINUTE, 584, DATEADD(DAY, -77, @hoy)), 'RECIBIDA', 'gerencia_s03'),
+(5, 8, DATEADD(MINUTE, 967, DATEADD(DAY, -72, @hoy)), 'RECIBIDA', 'gerencia_s05'),
+(5, 8, DATEADD(MINUTE, 596, DATEADD(DAY, -58, @hoy)), 'RECIBIDA', 'gerencia_s05'),
+(9, 8, DATEADD(MINUTE, 779, DATEADD(DAY, -57, @hoy)), 'CANCELADA', 'gerencia_s09'),
+(10, 8, DATEADD(MINUTE, 725, DATEADD(DAY, -54, @hoy)), 'RECIBIDA', 'gerencia_s10'),
+(6, 7, DATEADD(MINUTE, 757, DATEADD(DAY, -48, @hoy)), 'RECIBIDA', 'gerencia_s06'),
+(4, 1, DATEADD(MINUTE, 1000, DATEADD(DAY, -44, @hoy)), 'RECIBIDA', 'gerencia_s04'),
+(8, 10, DATEADD(MINUTE, 860, DATEADD(DAY, -37, @hoy)), 'RECIBIDA', 'gerencia_s08'),
+(8, 10, DATEADD(MINUTE, 661, DATEADD(DAY, -36, @hoy)), 'RECIBIDA', 'gerencia_s08'),
+(3, 6, DATEADD(MINUTE, 668, DATEADD(DAY, -28, @hoy)), 'RECIBIDA', 'gerencia_s03'),
+(1, 10, DATEADD(MINUTE, 695, DATEADD(DAY, -27, @hoy)), 'RECIBIDA', 'gerencia_s01'),
+(3, 6, DATEADD(MINUTE, 981, DATEADD(DAY, -26, @hoy)), 'RECIBIDA', 'gerencia_s03'),
+(4, 7, DATEADD(MINUTE, 788, DATEADD(DAY, -24, @hoy)), 'CANCELADA', 'gerencia_s04'),
+(1, 7, DATEADD(MINUTE, 926, DATEADD(DAY, -18, @hoy)), 'RECIBIDA', 'gerencia_s01'),
+(2, 5, DATEADD(MINUTE, 980, DATEADD(DAY, -6, @hoy)), 'EN TRANSITO', 'gerencia_s02'),
+(10, 9, DATEADD(MINUTE, 570, DATEADD(DAY, -5, @hoy)), 'EN TRANSITO', 'gerencia_s10'),
+(1, 5, DATEADD(MINUTE, 845, DATEADD(DAY, -4, @hoy)), 'EN TRANSITO', 'gerencia_s01'),
+(9, 6, DATEADD(MINUTE, 615, DATEADD(DAY, -3, @hoy)), 'EN TRANSITO', 'gerencia_s09'),
+(2, 3, DATEADD(MINUTE, 562, DATEADD(DAY, -1, @hoy)), 'PENDIENTE', 'gerencia_s02'),
+(3, 1, DATEADD(MINUTE, 917, DATEADD(DAY, -1, @hoy)), 'PENDIENTE', 'gerencia_s03'),
+(3, 4, DATEADD(MINUTE, 628, @hoy), 'PENDIENTE', 'gerencia_s03');
 
-USE FITLIFENETWORKdb;
-GO
+PRINT '>> 05/09  DETALLE_TRANSFERENCIAS  (48 filas)';
+INSERT INTO DETALLE_TRANSFERENCIAS (id_transferencia, id_producto, cantidad) VALUES
+(1, 3, 4),
+(1, 17, 12),
+(2, 30, 8),
+(3, 31, 8),
+(3, 15, 12),
+(3, 28, 12),
+(3, 17, 12),
+(4, 5, 5),
+(4, 30, 6),
+(4, 4, 8),
+(4, 17, 18),
+(5, 14, 24),
+(6, 28, 12),
+(7, 14, 12),
+(7, 17, 24),
+(8, 19, 10),
+(8, 18, 10),
+(9, 27, 12),
+(9, 15, 18),
+(10, 2, 4),
+(10, 5, 6),
+(11, 18, 10),
+(12, 31, 8),
+(12, 9, 5),
+(13, 27, 18),
+(13, 6, 6),
+(14, 15, 12),
+(14, 14, 24),
+(15, 3, 5),
+(16, 31, 6),
+(17, 30, 6),
+(18, 30, 6),
+(19, 30, 8),
+(20, 31, 12),
+(20, 30, 8),
+(20, 4, 5),
+(21, 4, 5),
+(22, 29, 12),
+(23, 30, 10),
+(23, 15, 18),
+(24, 29, 12),
+(24, 26, 4),
+(25, 11, 5),
+(25, 24, 5),
+(26, 31, 6),
+(27, 2, 5),
+(27, 17, 18),
+(28, 16, 18);
 
--- 1. Insertar Roles del Sistema
-INSERT INTO ROLES_SISTEMA (rol, descripcion) VALUES 
-('ROLE_GERENTE_GENERAL', 'Acceso total y reportes globales'),
-('ROLE_GERENTE_MIEMBROS', 'Gestión de socios, planes y contratos'),
-('ROLE_GERENTE_VENTAS', 'Gestión de stock, precios y cajas'),
-('ROLE_GERENTE_EQUIPAMIENTO', 'Gestión de máquinas y mantenimientos'),
-('ROLE_VENDEDOR', 'Ventas de mostrador y cobros'),
-('ROLE_TECNICO', 'Mantenimiento e incidencias de equipos');
+PRINT '>> 06/09  DEVOLUCIONES_VENTA  (24 filas)';  -- fechas ancladas a la venta original (las ventas de la carga base son fijas)
+INSERT INTO DEVOLUCIONES_VENTA (id_venta, fecha_devolucion, motivo, id_empleado, importe_reintegrado) VALUES
+(18, '2025-11-21T10:14:00', 'Envase abierto al momento de la entrega', 52, 2950.00),
+(21, '2025-11-26T11:56:00', 'Envase con pérdida de líquido', 46, 4100.00),
+(33, '2025-12-09T13:24:00', 'Producto vencido detectado por el socio', 40, 4000.00),
+(44, '2026-01-10T14:11:00', 'Talle incorrecto y sin posibilidad de cambio en sede', 58, 31450.00),
+(61, '2026-01-26T14:11:00', 'Envase sellado dañado al momento de abrir el producto', 46, 46000.00),
+(77, '2026-02-09T19:22:00', 'Arrepentimiento de compra dentro de las 48 horas', 18, 20000.00),
+(74, '2026-02-11T13:38:00', 'Envase con pérdida de líquido', 2, 2000.00),
+(87, '2026-02-24T15:58:00', 'Producto en mal estado de conservación', 29, 3100.00),
+(88, '2026-02-26T12:16:00', 'Producto en mal estado de conservación', 3, 2000.00),
+(95, '2026-02-28T12:43:00', 'Envase abierto al momento de la entrega', 10, 5400.00),
+(99, '2026-03-03T14:42:00', 'Envase sellado dañado al momento de abrir el producto', 24, 34000.00),
+(106, '2026-03-10T13:28:00', 'Envase abierto al momento de la entrega', 17, 3400.00),
+(125, '2026-03-21T20:09:00', 'Producto con fecha de vencimiento próxima', 1, 33500.00),
+(170, '2026-04-19T11:47:00', 'Sabor distinto al solicitado por el socio', 31, 68000.00),
+(219, '2026-05-27T10:30:00', 'Sabor distinto al solicitado por el socio', 23, 49000.00),
+(243, '2026-06-21T16:10:00', 'Envase abierto al momento de la entrega', 53, 11200.00),
+(272, '2026-07-25T10:37:00', 'Accesorio no compatible con el uso previsto', 53, 9200.00),
+(279, '2026-07-28T18:54:00', 'Accesorio no compatible con el uso previsto', 45, 9200.00),
+(319, '2026-08-28T19:10:00', 'Envase sellado dañado al momento de abrir el producto', 40, 38000.00),
+(320, '2026-09-02T15:51:00', 'Producto en mal estado de conservación', 28, 2200.00),
+(326, '2026-09-05T15:49:00', 'Envase abierto al momento de la entrega', 33, 18000.00),
+(334, '2026-09-08T11:13:00', 'Envase sellado dañado al momento de abrir el producto', 33, 30000.00),
+(338, '2026-09-15T10:37:00', 'Sabor distinto al solicitado por el socio', 11, 96000.00),
+(345, '2026-09-21T12:30:00', 'Envase abierto al momento de la entrega', 58, 4500.00);
 
--- 2. Insertar Usuarios (clave en texto plano: 123456)
-INSERT INTO USUARIOS (nombre, contrasena) VALUES
-('gerente.general', '123456'),
-('gerente.miembros', '123456'),
-('gerente.ventas', '123456'),
-('gerente.maquinas', '123456'),
-('vendedor.mostrador', '123456'),
-('tecnico.mantenimiento', '123456');
+PRINT '>> 07/09  DETALLE_DEVOLUCIONES_VENTA  (26 filas)';
+INSERT INTO DETALLE_DEVOLUCIONES_VENTA (id_devolucion, id_producto, cantidad, precio_unitario) VALUES
+(1, 31, 1, 2950.00),
+(2, 19, 1, 4100.00),
+(3, 29, 1, 4000.00),
+(4, 9, 1, 28500.00),
+(4, 16, 1, 2950.00),
+(5, 5, 1, 17500.00),
+(5, 9, 1, 28500.00),
+(6, 8, 1, 20000.00),
+(7, 17, 1, 2000.00),
+(8, 16, 1, 3100.00),
+(9, 17, 1, 2000.00),
+(10, 30, 2, 2700.00),
+(11, 3, 1, 34000.00),
+(12, 28, 2, 1700.00),
+(13, 6, 1, 33500.00),
+(14, 3, 2, 34000.00),
+(15, 1, 1, 49000.00),
+(16, 30, 4, 2800.00),
+(17, 26, 1, 9200.00),
+(18, 26, 1, 9200.00),
+(19, 6, 1, 38000.00),
+(20, 17, 1, 2200.00),
+(21, 29, 4, 4500.00),
+(22, 7, 1, 30000.00),
+(23, 2, 1, 96000.00),
+(24, 29, 1, 4500.00);
 
--- 3. Asignar Roles a Usuarios (asumiendo IDs 1 al 6 autogenerados)
+PRINT '>> 08/09  MOVIMIENTOS_STOCK  (97 filas)';  -- trazabilidad de las transferencias y devoluciones anteriores
+/* Convención del trigger TR_RegistrarMovimientosStock: ENTRADA con cantidad positiva, SALIDA con cantidad negativa.
+   - Transferencia RECIBIDA: SALIDA en origen (+3 h) y ENTRADA en destino (+28 h).
+   - Transferencia EN TRANSITO: solo la SALIDA en origen. PENDIENTE y CANCELADA no mueven stock.
+   - Devolución: ENTRADA en la sede de la venta, vinculada por id_venta.
+   STOCK_SEDE no se modifica: es la foto de existencias de la carga base. */
+INSERT INTO MOVIMIENTOS_STOCK (id_sede, id_producto, tipo_movimiento, cantidad, fecha_movimiento, id_venta, usuario_sistema, observaciones)
+SELECT m.id_sede, m.id_producto, m.tipo_movimiento, m.cantidad, m.fecha_movimiento, m.id_venta, m.usuario_sistema, m.observaciones
+FROM (
+    SELECT t.id_sede_origen AS id_sede, d.id_producto, 'SALIDA' AS tipo_movimiento, -d.cantidad AS cantidad,
+           DATEADD(HOUR, 3, t.fecha_solicitud) AS fecha_movimiento, CAST(NULL AS INT) AS id_venta,
+           t.usuario_sistema AS usuario_sistema,
+           'Transferencia #' + CAST(t.id_transferencia AS VARCHAR(10)) + ' - salida hacia sede ' + CAST(t.id_sede_destino AS VARCHAR(10)) AS observaciones
+    FROM TRANSFERENCIAS_STOCK t
+    JOIN DETALLE_TRANSFERENCIAS d ON d.id_transferencia = t.id_transferencia
+    WHERE t.estado IN ('RECIBIDA', 'EN TRANSITO')
+    UNION ALL
+    SELECT t.id_sede_destino, d.id_producto, 'ENTRADA', d.cantidad,
+           DATEADD(HOUR, 28, t.fecha_solicitud), CAST(NULL AS INT),
+           'recepcion_s' + RIGHT('0' + CAST(t.id_sede_destino AS VARCHAR(2)), 2),
+           'Transferencia #' + CAST(t.id_transferencia AS VARCHAR(10)) + ' - ingreso desde sede ' + CAST(t.id_sede_origen AS VARCHAR(10))
+    FROM TRANSFERENCIAS_STOCK t
+    JOIN DETALLE_TRANSFERENCIAS d ON d.id_transferencia = t.id_transferencia
+    WHERE t.estado = 'RECIBIDA'
+    UNION ALL
+    SELECT v.id_sede, dd.id_producto, 'ENTRADA', dd.cantidad,
+           dv.fecha_devolucion, dv.id_venta,
+           'recepcion_s' + RIGHT('0' + CAST(v.id_sede AS VARCHAR(2)), 2),
+           'Devolucion #' + CAST(dv.id_devolucion AS VARCHAR(10)) + ' - reingreso a stock por devolucion de la venta #' + CAST(dv.id_venta AS VARCHAR(10))
+    FROM DEVOLUCIONES_VENTA dv
+    JOIN DETALLE_DEVOLUCIONES_VENTA dd ON dd.id_devolucion = dv.id_devolucion
+    JOIN VENTAS v ON v.id_venta = dv.id_venta
+) m
+ORDER BY m.fecha_movimiento, m.id_sede, m.id_producto;
+
+/* =============================================================================
+   3. AUDITORÍA
+   ============================================================================= */
+
+PRINT '>> 09/09  AUDITORIA_EQUIPAMIENTO  (62 filas)';  -- cambios de estado ligados a reclamos y mantenimientos ya cargados
+/* Cada fila responde a un mantenimiento de la carga base:
+   - Reparación correctiva (cerrada) : Operativo -> En Mantenimiento (al registrarse el reclamo) -> Operativo (al terminar).
+   - Reparación en curso             : Operativo -> En Mantenimiento.
+   - Diagnóstico pendiente de repuesto: Operativo -> En Mantenimiento -> Fuera de Servicio.
+   El último estado de cada equipo auditado coincide con EQUIPAMIENTO.estado_operativo. */
+INSERT INTO AUDITORIA_EQUIPAMIENTO (id_equipo, estado_anterior, estado_nuevo, fecha_cambio, usuario_sistema) VALUES
+(73, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 1153, DATEADD(DAY, -139, @hoy))), 'tecnico_s06'),
+(43, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 875, DATEADD(DAY, -136, @hoy))), 'tecnico_s04'),
+(73, 'En Mantenimiento', 'Operativo', DATEADD(HOUR, 17, DATEADD(DAY, -136, @hoy)), 'tecnico_s06'),
+(43, 'En Mantenimiento', 'Operativo', DATEADD(HOUR, 17, DATEADD(DAY, -135, @hoy)), 'tecnico_s04'),
+(62, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 1172, DATEADD(DAY, -132, @hoy))), 'tecnico_s06'),
+(62, 'En Mantenimiento', 'Operativo', DATEADD(HOUR, 17, DATEADD(DAY, -129, @hoy)), 'tecnico_s06'),
+(56, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 749, DATEADD(DAY, -124, @hoy))), 'tecnico_s06'),
+(56, 'En Mantenimiento', 'Operativo', DATEADD(HOUR, 17, DATEADD(DAY, -121, @hoy)), 'tecnico_s06'),
+(59, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 1172, DATEADD(DAY, -119, @hoy))), 'tecnico_s06'),
+(59, 'En Mantenimiento', 'Operativo', DATEADD(HOUR, 17, DATEADD(DAY, -114, @hoy)), 'tecnico_s06'),
+(83, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 863, DATEADD(DAY, -107, @hoy))), 'tecnico_s06'),
+(83, 'En Mantenimiento', 'Operativo', DATEADD(HOUR, 17, DATEADD(DAY, -104, @hoy)), 'tecnico_s06'),
+(41, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 513, DATEADD(DAY, -102, @hoy))), 'tecnico_s04'),
+(70, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 889, DATEADD(DAY, -100, @hoy))), 'tecnico_s06'),
+(70, 'En Mantenimiento', 'Operativo', DATEADD(HOUR, 17, DATEADD(DAY, -99, @hoy)), 'tecnico_s06'),
+(41, 'En Mantenimiento', 'Operativo', DATEADD(HOUR, 17, DATEADD(DAY, -97, @hoy)), 'tecnico_s04'),
+(82, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 1146, DATEADD(DAY, -88, @hoy))), 'tecnico_s06'),
+(82, 'En Mantenimiento', 'Operativo', DATEADD(HOUR, 17, DATEADD(DAY, -87, @hoy)), 'tecnico_s06'),
+(24, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 1016, DATEADD(DAY, -83, @hoy))), 'tecnico_s02'),
+(39, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 1126, DATEADD(DAY, -83, @hoy))), 'tecnico_s04'),
+(39, 'En Mantenimiento', 'Operativo', DATEADD(HOUR, 17, DATEADD(DAY, -79, @hoy)), 'tecnico_s04'),
+(24, 'En Mantenimiento', 'Operativo', DATEADD(HOUR, 17, DATEADD(DAY, -78, @hoy)), 'tecnico_s02'),
+(19, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 1123, DATEADD(DAY, -65, @hoy))), 'tecnico_s02'),
+(19, 'En Mantenimiento', 'Operativo', DATEADD(HOUR, 17, DATEADD(DAY, -63, @hoy)), 'tecnico_s02'),
+(31, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 1064, DATEADD(DAY, -60, @hoy))), 'tecnico_s04'),
+(115, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 8, DATEADD(DAY, -50, @hoy)), 'sistema_equipamiento'),
+(115, 'En Mantenimiento', 'Fuera de Servicio', DATEADD(HOUR, 16, DATEADD(DAY, -50, @hoy)), 'sistema_equipamiento'),
+(90, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 639, DATEADD(DAY, -48, @hoy))), 'tecnico_s08'),
+(47, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 8, DATEADD(DAY, -47, @hoy)), 'sistema_equipamiento'),
+(47, 'En Mantenimiento', 'Fuera de Servicio', DATEADD(HOUR, 16, DATEADD(DAY, -47, @hoy)), 'sistema_equipamiento'),
+(22, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 967, DATEADD(DAY, -47, @hoy))), 'tecnico_s02'),
+(22, 'En Mantenimiento', 'Operativo', DATEADD(HOUR, 17, DATEADD(DAY, -45, @hoy)), 'tecnico_s02'),
+(90, 'En Mantenimiento', 'Operativo', DATEADD(HOUR, 17, DATEADD(DAY, -45, @hoy)), 'tecnico_s08'),
+(108, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 917, DATEADD(DAY, -45, @hoy))), 'tecnico_s09'),
+(35, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 8, DATEADD(DAY, -39, @hoy)), 'sistema_equipamiento'),
+(35, 'En Mantenimiento', 'Fuera de Servicio', DATEADD(HOUR, 16, DATEADD(DAY, -39, @hoy)), 'sistema_equipamiento'),
+(108, 'En Mantenimiento', 'Operativo', DATEADD(HOUR, 17, DATEADD(DAY, -39, @hoy)), 'tecnico_s09'),
+(102, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 619, DATEADD(DAY, -38, @hoy))), 'tecnico_s09'),
+(55, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 8, DATEADD(DAY, -34, @hoy)), 'sistema_equipamiento'),
+(55, 'En Mantenimiento', 'Fuera de Servicio', DATEADD(HOUR, 16, DATEADD(DAY, -34, @hoy)), 'sistema_equipamiento'),
+(86, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 1113, DATEADD(DAY, -33, @hoy))), 'tecnico_s08'),
+(86, 'En Mantenimiento', 'Operativo', DATEADD(HOUR, 17, DATEADD(DAY, -32, @hoy)), 'tecnico_s08'),
+(77, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 556, DATEADD(DAY, -29, @hoy))), 'tecnico_s06'),
+(102, 'En Mantenimiento', 'Fuera de Servicio', DATEADD(HOUR, 16, DATEADD(DAY, -27, @hoy)), 'tecnico_s09'),
+(31, 'En Mantenimiento', 'Fuera de Servicio', DATEADD(HOUR, 16, DATEADD(DAY, -22, @hoy)), 'tecnico_s04'),
+(30, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 766, DATEADD(DAY, -12, @hoy))), 'tecnico_s04'),
+(93, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 803, DATEADD(DAY, -12, @hoy))), 'tecnico_s08'),
+(12, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 902, DATEADD(DAY, -12, @hoy))), 'tecnico_s01'),
+(110, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 1076, DATEADD(DAY, -12, @hoy))), 'tecnico_s09'),
+(17, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 1065, DATEADD(DAY, -10, @hoy))), 'tecnico_s02'),
+(50, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 555, DATEADD(DAY, -9, @hoy))), 'tecnico_s04'),
+(52, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 798, DATEADD(DAY, -8, @hoy))), 'tecnico_s04'),
+(81, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 1109, DATEADD(DAY, -8, @hoy))), 'tecnico_s06'),
+(79, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 754, DATEADD(DAY, -7, @hoy))), 'tecnico_s06'),
+(77, 'En Mantenimiento', 'Fuera de Servicio', DATEADD(HOUR, 16, DATEADD(DAY, -6, @hoy)), 'tecnico_s06'),
+(18, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 8, DATEADD(DAY, -5, @hoy)), 'sistema_equipamiento'),
+(18, 'En Mantenimiento', 'Fuera de Servicio', DATEADD(HOUR, 16, DATEADD(DAY, -5, @hoy)), 'sistema_equipamiento'),
+(68, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 635, DATEADD(DAY, -4, @hoy))), 'tecnico_s06'),
+(1, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 693, DATEADD(DAY, -4, @hoy))), 'tecnico_s01'),
+(20, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 909, DATEADD(DAY, -4, @hoy))), 'tecnico_s02'),
+(37, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 876, DATEADD(DAY, -3, @hoy))), 'tecnico_s04'),
+(14, 'Operativo', 'En Mantenimiento', DATEADD(HOUR, 2, DATEADD(MINUTE, 1147, DATEADD(DAY, -2, @hoy))), 'tecnico_s01');
+
+/* =============================================================================
+   VERIFICACIÓN FINAL (si algo no coincide, se revierte todo)
+   ============================================================================= */
+PRINT '>> Verificando cantidades cargadas...';
+IF EXISTS (
+    SELECT 1
+    FROM (
+        SELECT 'CAJAS' AS tabla, COUNT(*) AS cargado FROM CAJAS
+        UNION ALL
+        SELECT 'CIERRES_CAJA', COUNT(*) FROM CIERRES_CAJA
+        UNION ALL
+        SELECT 'PAGOS_CUOTAS', COUNT(*) FROM PAGOS_CUOTAS
+        UNION ALL
+        SELECT 'TRANSFERENCIAS_STOCK', COUNT(*) FROM TRANSFERENCIAS_STOCK
+        UNION ALL
+        SELECT 'DETALLE_TRANSFERENCIAS', COUNT(*) FROM DETALLE_TRANSFERENCIAS
+        UNION ALL
+        SELECT 'DEVOLUCIONES_VENTA', COUNT(*) FROM DEVOLUCIONES_VENTA
+        UNION ALL
+        SELECT 'DETALLE_DEVOLUCIONES_VENTA', COUNT(*) FROM DETALLE_DEVOLUCIONES_VENTA
+        UNION ALL
+        SELECT 'MOVIMIENTOS_STOCK (complementarios)', COUNT(*) FROM MOVIMIENTOS_STOCK
+        WHERE observaciones LIKE 'Transferencia #%' OR observaciones LIKE 'Devolucion #%'
+        UNION ALL
+        SELECT 'AUDITORIA_EQUIPAMIENTO', COUNT(*) FROM AUDITORIA_EQUIPAMIENTO
+    ) AS c
+    JOIN (VALUES
+        ('CAJAS', 379),
+        ('CIERRES_CAJA', 369),
+        ('PAGOS_CUOTAS', 1570),
+        ('TRANSFERENCIAS_STOCK', 28),
+        ('DETALLE_TRANSFERENCIAS', 48),
+        ('DEVOLUCIONES_VENTA', 24),
+        ('DETALLE_DEVOLUCIONES_VENTA', 26),
+        ('MOVIMIENTOS_STOCK (complementarios)', 97),
+        ('AUDITORIA_EQUIPAMIENTO', 62)
+    ) AS e (tabla, esperado) ON e.tabla = c.tabla
+    WHERE c.cargado <> e.esperado
+)
+    THROW 50015, 'La cantidad de filas cargadas no coincide con la esperada. Se revierte la carga.', 1;
+
+/* Integridad: pagos. Cada cuota pagada debe estar cubierta exactamente por sus pagos; cada cuota impaga, con saldo pendiente */
+PRINT '>> Verificando integridad referencial y contable...';
+IF EXISTS (
+    SELECT 1
+    FROM CUOTAS_COBROS cc
+    LEFT JOIN (SELECT id_cobro, SUM(importe) AS pagado FROM PAGOS_CUOTAS GROUP BY id_cobro) pg ON pg.id_cobro = cc.id_cobro
+    WHERE (cc.fecha_pago IS NOT NULL AND ISNULL(pg.pagado, 0) <> cc.monto)
+       OR (cc.fecha_pago IS NULL     AND ISNULL(pg.pagado, 0) >= cc.monto)
+)
+    THROW 50021, 'PAGOS_CUOTAS: hay cuotas pagadas sin pagos que las cubran, o cuotas impagas con pagos que superan su monto.', 1;
+
+IF EXISTS (
+    SELECT 1
+    FROM PAGOS_CUOTAS pc
+    JOIN CUOTAS_COBROS cc ON cc.id_cobro = pc.id_cobro
+    WHERE cc.fecha_pago IS NOT NULL AND pc.fecha_pago > cc.fecha_pago
+)
+    THROW 50022, 'PAGOS_CUOTAS: hay pagos posteriores a la fecha de cancelacion de la cuota.', 1;
+
+/* Integridad: cajas y cierres */
+IF EXISTS (SELECT 1 FROM CAJAS c JOIN EMPLEADOS e ON e.id_empleado = c.id_empleado WHERE e.id_sede <> c.id_sede)
+    THROW 50023, 'CAJAS: hay cajas abiertas por un empleado de otra sede.', 1;
+
+IF EXISTS (
+    SELECT 1
+    FROM CAJAS c
+    LEFT JOIN CIERRES_CAJA cz ON cz.id_caja = c.id_caja
+    WHERE (c.estado = 'CERRADA' AND (cz.id_cierre IS NULL OR c.fecha_cierre IS NULL))
+       OR (c.estado = 'ABIERTA' AND (cz.id_cierre IS NOT NULL OR c.fecha_cierre IS NOT NULL))
+)
+    THROW 50024, 'CAJAS/CIERRES_CAJA: hay cajas cerradas sin cierre o cajas abiertas con cierre.', 1;
+
+IF EXISTS (
+    SELECT 1
+    FROM CIERRES_CAJA cz
+    JOIN CAJAS c ON c.id_caja = cz.id_caja
+    WHERE cz.saldo_esperado <> c.saldo_inicial + cz.total_ventas
+       OR cz.diferencia <> cz.saldo_real - cz.saldo_esperado
+)
+    THROW 50025, 'CIERRES_CAJA: saldo esperado o diferencia mal calculados.', 1;
+
+IF (SELECT ISNULL(SUM(total_ventas), 0) FROM CIERRES_CAJA) <> (SELECT ISNULL(SUM(cantidad * precio_unitario_historico), 0) FROM DETALLE_VENTAS)
+    THROW 50026, 'CIERRES_CAJA: hay ventas que no quedaron comprendidas en ninguna caja.', 1;
+
+/* Integridad: devoluciones */
+IF EXISTS (
+    SELECT 1
+    FROM DEVOLUCIONES_VENTA dv
+    LEFT JOIN (SELECT id_devolucion, SUM(cantidad * precio_unitario) AS total
+               FROM DETALLE_DEVOLUCIONES_VENTA GROUP BY id_devolucion) dd ON dd.id_devolucion = dv.id_devolucion
+    WHERE ISNULL(dd.total, 0) <> dv.importe_reintegrado
+)
+    THROW 50027, 'DEVOLUCIONES_VENTA: el importe reintegrado no coincide con su detalle.', 1;
+
+IF EXISTS (
+    SELECT 1
+    FROM DETALLE_DEVOLUCIONES_VENTA dd
+    JOIN DEVOLUCIONES_VENTA dv ON dv.id_devolucion = dd.id_devolucion
+    LEFT JOIN (SELECT id_venta, id_producto, SUM(cantidad) AS cant, MAX(precio_unitario_historico) AS precio
+               FROM DETALLE_VENTAS GROUP BY id_venta, id_producto) x ON x.id_venta = dv.id_venta AND x.id_producto = dd.id_producto
+    WHERE x.id_venta IS NULL OR dd.cantidad > x.cant OR dd.precio_unitario <> x.precio
+)
+    THROW 50028, 'DETALLE_DEVOLUCIONES_VENTA: hay productos que no pertenecen a la venta, cantidades mayores a las vendidas o precios distintos.', 1;
+
+IF EXISTS (
+    SELECT 1
+    FROM DEVOLUCIONES_VENTA dv
+    JOIN VENTAS v ON v.id_venta = dv.id_venta
+    JOIN EMPLEADOS e ON e.id_empleado = dv.id_empleado
+    WHERE dv.fecha_devolucion < v.fecha_hora_venta OR e.id_sede <> v.id_sede
+)
+    THROW 50029, 'DEVOLUCIONES_VENTA: hay devoluciones anteriores a la venta o registradas por un empleado de otra sede.', 1;
+
+/* Integridad: transferencias (el producto debe existir en el stock de ambas sedes y alcanzar en el origen) */
+IF EXISTS (
+    SELECT 1
+    FROM DETALLE_TRANSFERENCIAS d
+    JOIN TRANSFERENCIAS_STOCK t ON t.id_transferencia = d.id_transferencia
+    LEFT JOIN STOCK_SEDE so ON so.id_sede = t.id_sede_origen  AND so.id_producto = d.id_producto
+    LEFT JOIN STOCK_SEDE sd ON sd.id_sede = t.id_sede_destino AND sd.id_producto = d.id_producto
+    WHERE so.id_stock_sede IS NULL OR sd.id_stock_sede IS NULL OR d.cantidad > so.cantidad_actual
+)
+    THROW 50030, 'DETALLE_TRANSFERENCIAS: producto sin stock registrado en origen/destino o cantidad superior a la existencia del origen.', 1;
+
+/* Integridad: auditoria de equipamiento (el ultimo estado auditado debe ser el estado actual del equipo) */
+IF EXISTS (SELECT 1 FROM AUDITORIA_EQUIPAMIENTO WHERE estado_anterior = estado_nuevo)
+    THROW 50031, 'AUDITORIA_EQUIPAMIENTO: hay cambios de estado sin cambio real.', 1;
+
+IF EXISTS (
+    SELECT 1
+    FROM EQUIPAMIENTO e
+    CROSS APPLY (SELECT TOP 1 a.estado_nuevo
+                 FROM AUDITORIA_EQUIPAMIENTO a
+                 WHERE a.id_equipo = e.id_equipo
+                 ORDER BY a.fecha_cambio DESC, a.id_auditoria DESC) u
+    WHERE u.estado_nuevo <> e.estado_operativo
+)
+    THROW 50032, 'AUDITORIA_EQUIPAMIENTO: el ultimo estado auditado no coincide con el estado actual del equipo.', 1;
+
+/* =============================================================================
+   2b. MOVIMIENTOS_STOCK.id_venta DE LAS SALIDAS AUTOMATICAS POR VENTAS
+   TR_ActualizarStockVenta descuenta el stock agrupado por (sede, producto) en CADA
+   INSERT de DETALLE_VENTAS y TR_RegistrarMovimientosStock registra UN movimiento SALIDA
+   por grupo, sin id_venta. Si el grupo proviene de UNA sola venta, su origen es
+   identificable y se completa id_venta. Si agrupa varias ventas, el movimiento no es
+   atribuible a una sola y id_venta se conserva en NULL. Los demas movimientos (altas de
+   stock y transferencias) no nacen de una venta y tambien conservan NULL.
+   Correspondencia: el grupo del INSERT 1 es el de id_detalle_venta <= @ultimo_detalle_lote1
+   y el del INSERT 2 el resto; dentro de cada (sede, producto) los movimientos nacen en el
+   orden de los INSERT, por eso se emparejan por posicion (id_movimiento) y por cantidad.
+   Va DESPUES de la Guarda 2 y de los controles 50015/50021-50032, que asumen que ningun
+   movimiento automatico tiene id_venta.
+   ============================================================================= */
+PRINT '>> 02b  MOVIMIENTOS_STOCK.id_venta de las salidas automaticas por ventas';
+
+DECLARE @grupos_salida TABLE (
+    id_sede     INT NOT NULL,
+    id_producto INT NOT NULL,
+    lote        INT NOT NULL,
+    orden       INT NOT NULL,
+    cantidad    INT NOT NULL,
+    ventas      INT NOT NULL,
+    id_venta    INT NOT NULL,
+    PRIMARY KEY (id_sede, id_producto, lote)
+);
+
+INSERT INTO @grupos_salida (id_sede, id_producto, lote, orden, cantidad, ventas, id_venta)
+SELECT g.id_sede, g.id_producto, g.lote,
+       ROW_NUMBER() OVER (PARTITION BY g.id_sede, g.id_producto ORDER BY g.lote),
+       g.cantidad, g.ventas, g.id_venta
+FROM (
+    SELECT l.id_sede, l.id_producto, l.lote,
+           SUM(l.cantidad) AS cantidad,
+           COUNT(DISTINCT l.id_venta) AS ventas,
+           MIN(l.id_venta) AS id_venta
+    FROM (
+        SELECT v.id_sede, d.id_producto, d.id_venta, d.cantidad,
+               CASE WHEN d.id_detalle_venta <= @ultimo_detalle_lote1 THEN 1 ELSE 2 END AS lote
+        FROM DETALLE_VENTAS d
+        INNER JOIN VENTAS v ON v.id_venta = d.id_venta
+    ) l
+    GROUP BY l.id_sede, l.id_producto, l.lote
+) g;
+
+DECLARE @mov_vinculados INT = 0;
+
+WITH salidas AS (
+    SELECT m.id_movimiento, m.id_sede, m.id_producto, -m.cantidad AS cantidad,
+           ROW_NUMBER() OVER (PARTITION BY m.id_sede, m.id_producto ORDER BY m.id_movimiento) AS orden
+    FROM MOVIMIENTOS_STOCK m
+    WHERE m.tipo_movimiento = 'SALIDA'
+      AND m.id_venta IS NULL
+      AND m.observaciones LIKE 'Movimiento generado automaticamente%'
+)
+UPDATE m
+SET m.id_venta = g.id_venta
+FROM MOVIMIENTOS_STOCK m
+INNER JOIN salidas s         ON s.id_movimiento = m.id_movimiento
+INNER JOIN @grupos_salida g  ON g.id_sede = s.id_sede AND g.id_producto = s.id_producto
+                            AND g.orden = s.orden AND g.cantidad = s.cantidad
+WHERE g.ventas = 1;
+SET @mov_vinculados = @@ROWCOUNT;
+
+/* Control 1: cada salida automatica vinculada coincide exactamente con lo vendido en esa venta (sede, producto, cantidad) */
+IF EXISTS (
+    SELECT 1
+    FROM MOVIMIENTOS_STOCK m
+    WHERE m.id_venta IS NOT NULL
+      AND m.tipo_movimiento = 'SALIDA'
+      AND m.observaciones LIKE 'Movimiento generado automaticamente%'
+      AND ISNULL((SELECT SUM(d.cantidad)
+                  FROM DETALLE_VENTAS d
+                  INNER JOIN VENTAS v ON v.id_venta = d.id_venta
+                  WHERE d.id_venta = m.id_venta AND v.id_sede = m.id_sede AND d.id_producto = m.id_producto), 0) <> -m.cantidad
+)
+    THROW 50033, 'MOVIMIENTOS_STOCK: una salida automatica quedo vinculada a una venta que no coincide en sede, producto o cantidad. Se revierte todo el script.', 1;
+
+/* Control 2: solo las salidas automaticas por venta y las devoluciones tienen id_venta */
+IF EXISTS (
+    SELECT 1
+    FROM MOVIMIENTOS_STOCK m
+    WHERE m.id_venta IS NOT NULL
+      AND m.observaciones NOT LIKE 'Devolucion #%'
+      AND NOT (m.tipo_movimiento = 'SALIDA' AND m.observaciones LIKE 'Movimiento generado automaticamente%')
+)
+    THROW 50034, 'MOVIMIENTOS_STOCK: hay movimientos con id_venta que no son devoluciones ni salidas automaticas por venta. Se revierte todo el script.', 1;
+
+/* =============================================================================
+   3. SEGURIDAD WEB (ROLES_SISTEMA, USUARIOS, ROLUSUARIO - 18 filas)
+   Va DENTRO de la misma transaccion: o queda todo el sistema cargado (61 tablas) o
+   no queda nada. Los mismos valores del script original (6 roles, 6 usuarios, 6
+   asignaciones), pero:
+     - cada fila se inserta solo si no existe ya (por nombre de rol / de usuario);
+     - ROLUSUARIO se arma por NOMBRE (usuario <-> rol) y no por ids 1..6 supuestos;
+     - se verifican conteos, duplicados y que cada usuario tenga su rol esperado.
+   ADVERTENCIA: la clave '123456' se almacena en TEXTO PLANO tal como estaba en el
+   script original. Es una clave inicial de desarrollo/demostracion: debe reemplazarse
+   por un hash (p. ej. BCrypt, que cabe en VARCHAR(255)) si la aplicacion web lo
+   soporta, o cambiarse en el primer ingreso. No usar en produccion.
+   ============================================================================= */
+PRINT '>> 03/03  SEGURIDAD WEB  (6 roles, 6 usuarios, 6 asignaciones)';
+
+DECLARE @asignaciones TABLE (nombre_usuario VARCHAR(50) NOT NULL, rol VARCHAR(50) NOT NULL);
+INSERT INTO @asignaciones (nombre_usuario, rol) VALUES
+('gerente.general',       'ROLE_GERENTE_GENERAL'),
+('gerente.miembros',      'ROLE_GERENTE_MIEMBROS'),
+('gerente.ventas',        'ROLE_GERENTE_VENTAS'),
+('gerente.maquinas',      'ROLE_GERENTE_EQUIPAMIENTO'),
+('vendedor.mostrador',    'ROLE_VENDEDOR'),
+('tecnico.mantenimiento', 'ROLE_TECNICO');
+
+-- 1. Roles del sistema (ORDER BY fija el orden de los IDENTITY: 1..6 en una base nueva)
+INSERT INTO ROLES_SISTEMA (rol, descripcion)
+SELECT v.rol, v.descripcion
+FROM (VALUES
+    (1, 'ROLE_GERENTE_GENERAL',      'Acceso total y reportes globales'),
+    (2, 'ROLE_GERENTE_MIEMBROS',     'Gestión de socios, planes y contratos'),
+    (3, 'ROLE_GERENTE_VENTAS',       'Gestión de stock, precios y cajas'),
+    (4, 'ROLE_GERENTE_EQUIPAMIENTO', 'Gestión de máquinas y mantenimientos'),
+    (5, 'ROLE_VENDEDOR',             'Ventas de mostrador y cobros'),
+    (6, 'ROLE_TECNICO',              'Mantenimiento e incidencias de equipos')
+) AS v (orden, rol, descripcion)
+WHERE NOT EXISTS (SELECT 1 FROM ROLES_SISTEMA r WHERE r.rol = v.rol)
+ORDER BY v.orden;
+
+-- 2. Usuarios (clave en texto plano: 123456 - ver advertencia del encabezado de esta seccion)
+INSERT INTO USUARIOS (nombre, contrasena)
+SELECT v.nombre, v.contrasena
+FROM (VALUES
+    (1, 'gerente.general',       '123456'),
+    (2, 'gerente.miembros',      '123456'),
+    (3, 'gerente.ventas',        '123456'),
+    (4, 'gerente.maquinas',      '123456'),
+    (5, 'vendedor.mostrador',    '123456'),
+    (6, 'tecnico.mantenimiento', '123456')
+) AS v (orden, nombre, contrasena)
+WHERE NOT EXISTS (SELECT 1 FROM USUARIOS u WHERE u.nombre = v.nombre)
+ORDER BY v.orden;
+
+-- 3. Asignacion de roles a usuarios, resuelta por nombre contra los ids realmente generados
 INSERT INTO ROLUSUARIO (idusuario, idrol)
-VALUES (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6);
+SELECT u.id, r.id
+FROM @asignaciones a
+INNER JOIN USUARIOS u       ON u.nombre = a.nombre_usuario
+INNER JOIN ROLES_SISTEMA r  ON r.rol    = a.rol
+WHERE NOT EXISTS (SELECT 1 FROM ROLUSUARIO x WHERE x.idusuario = u.id AND x.idrol = r.id);
+
+/* Controles de la seguridad web (cualquier falla revierte el script completo) */
+IF (SELECT COUNT(*) FROM ROLES_SISTEMA) <> 6
+   OR (SELECT COUNT(*) FROM USUARIOS) <> 6
+   OR (SELECT COUNT(*) FROM ROLUSUARIO) <> 6
+    THROW 50041, 'La seguridad web no quedo con 6 roles, 6 usuarios y 6 asignaciones. Se revierte todo el script.', 1;
+
+IF EXISTS (SELECT 1 FROM ROLES_SISTEMA GROUP BY rol HAVING COUNT(*) > 1)
+   OR EXISTS (SELECT 1 FROM USUARIOS GROUP BY nombre HAVING COUNT(*) > 1)
+    THROW 50042, 'Hay roles o usuarios duplicados en la seguridad web. Se revierte todo el script.', 1;
+
+IF EXISTS (
+    SELECT 1
+    FROM @asignaciones a
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM ROLUSUARIO ru
+        INNER JOIN USUARIOS u      ON u.id = ru.idusuario
+        INNER JOIN ROLES_SISTEMA r ON r.id = ru.idrol
+        WHERE u.nombre = a.nombre_usuario AND r.rol = a.rol)
+)
+    THROW 50043, 'Alguna asignacion usuario-rol no coincide con la esperada. Se revierte todo el script.', 1;
+
+/* Conteos informativos de los movimientos que generaron los triggers (no se comparan contra un valor fijo) */
+DECLARE @mov_auto INT, @mov_entradas INT, @mov_salidas INT, @mov_salidas_sin_venta INT;
+SELECT @mov_auto = COUNT(*),
+       @mov_entradas = COALESCE(SUM(CASE WHEN tipo_movimiento <> 'SALIDA' THEN 1 ELSE 0 END), 0),
+       @mov_salidas = COALESCE(SUM(CASE WHEN tipo_movimiento = 'SALIDA' THEN 1 ELSE 0 END), 0),
+       @mov_salidas_sin_venta = COALESCE(SUM(CASE WHEN tipo_movimiento = 'SALIDA' AND id_venta IS NULL THEN 1 ELSE 0 END), 0)
+FROM MOVIMIENTOS_STOCK
+WHERE observaciones LIKE 'Movimiento generado automaticamente%';
+
+COMMIT TRANSACTION;
+SET @confirmada = 1;
+
+/* Restaura la sesion: ya no queda activo 'carga_inicial' para operaciones posteriores */
+EXEC sys.sp_set_session_context @key = N'usuario', @value = @ctx_previo;
+
+PRINT '>> TRANSACCION CONFIRMADA.';
+PRINT '>> Filas insertadas por este script: 11,332 (8,711 base + 2,603 complementarias + 18 seguridad web) en 61 tablas.';
+PRINT CONCAT('>> Filas generadas por triggers en MOVIMIENTOS_STOCK: ', @mov_auto, ' (', @mov_entradas, ' altas de stock + ', @mov_salidas, ' salidas por ventas).');
+PRINT CONCAT('>> Salidas por ventas vinculadas a su venta: ', @mov_vinculados, '; con id_venta NULL por agrupar varias ventas: ', @mov_salidas_sin_venta, '.');
+PRINT CONCAT('>> Total de filas en las 61 tablas: ', 11332 + @mov_auto, '.');
+PRINT '>> CARGA UNIFICADA FINALIZADA CORRECTAMENTE.';
+
+END TRY
+BEGIN CATCH
+    /* Informa el error original, deshace todo, restaura la sesion y relanza el MISMO error (THROW;) */
+    PRINT CONCAT('>> ERROR ', ERROR_NUMBER(), ' en la linea ', ERROR_LINE(), ': ', ERROR_MESSAGE());
+    IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION;
+    EXEC sys.sp_set_session_context @key = N'usuario', @value = @ctx_previo;
+    IF @confirmada = 1
+        PRINT '>> La transaccion ya estaba confirmada cuando se produjo el error: los datos SI quedaron cargados.';
+    ELSE
+        PRINT '>> CARGA REVERTIDA: no se confirmo ningun dato. Recree la base antes de reintentar (los IDENTITY no se revierten).';
+    THROW;
+END CATCH;
 GO
 
+/* Red de seguridad: si un error hubiera abortado el lote anterior sin pasar por el CATCH,
+   el contexto 'carga_inicial' no debe quedar activo en esta conexion. No emite mensajes de exito. */
+IF CONVERT(NVARCHAR(128), SESSION_CONTEXT(N'usuario')) = N'carga_inicial'
+    EXEC sys.sp_set_session_context @key = N'usuario', @value = NULL;
+GO
