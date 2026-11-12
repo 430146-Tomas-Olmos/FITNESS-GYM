@@ -8,6 +8,7 @@
         public string Apellido { get; set; }
         public DateTime FechaClase { get; set; }
         public TimeSpan HoraInicio { get; set; }
+        public string NombreDisciplina { get; set; }
         public string EstadoReserva { get; set; }
     }
 }

@@ -35,6 +35,9 @@ function clearSession() {
     localStorage.removeItem(USER_KEY);
 }
 
+// Si quedó guardado un token "demo" de versiones anteriores, se descarta.
+if ((getStoredToken() || '').endsWith('.demo')) { clearSession(); }
+
 function parseJwt(token) {
     try {
         const segments = token.split('.');
@@ -152,26 +155,10 @@ function initLoginPage() {
                 return;
             }
 
-            const demoUser = getDemoUser(nombre, contrasena);
-            if (demoUser) {
-                const token = createDemoToken(demoUser.usuario, demoUser.roles);
-                saveSession(token, demoUser);
-                window.location.href = 'inicio.html';
-                return;
-            }
-
             const data = await response.json().catch(() => ({}));
             showAlert('loginAlert', data.message || 'Credenciales inválidas.', 'danger');
         } catch (error) {
-            const demoUser = getDemoUser(nombre, contrasena);
-            if (demoUser) {
-                const token = createDemoToken(demoUser.usuario, demoUser.roles);
-                saveSession(token, demoUser);
-                window.location.href = 'inicio.html';
-                return;
-            }
-
-            showAlert('loginAlert', 'No se pudo iniciar sesión. Intente nuevamente.', 'danger');
+            showAlert('loginAlert', 'No se pudo conectar con el servidor. Verificá que el proyecto esté corriendo (iniciar.bat).', 'danger');
         }
     });
 }
@@ -241,6 +228,7 @@ function initDashboardPage() {
             { label: 'Socios', icon: 'bi-people', visible: roles.includes('ROLE_GERENTE_GENERAL') || roles.includes('ROLE_GERENTE_MIEMBROS') || roles.includes('ROLE_VENDEDOR') },
             { label: 'Tienda', icon: 'bi-bag', visible: roles.includes('ROLE_GERENTE_GENERAL') || roles.includes('ROLE_GERENTE_VENTAS') || roles.includes('ROLE_VENDEDOR') },
             { label: 'Equipamiento', icon: 'bi-tools', visible: roles.includes('ROLE_GERENTE_GENERAL') || roles.includes('ROLE_GERENTE_EQUIPAMIENTO') || roles.includes('ROLE_TECNICO') },
+            { label: 'Reportes', icon: 'bi-bar-chart-line', visible: roles.some((r) => r.startsWith('ROLE_GERENTE')), href: 'reportes-tpi.html' },
             { label: 'Administración', icon: 'bi-sliders', visible: roles.includes('ROLE_GERENTE_GENERAL') || roles.includes('ROLE_ADMIN') }
         ];
 

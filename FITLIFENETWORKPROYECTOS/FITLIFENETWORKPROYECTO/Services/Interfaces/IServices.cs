@@ -6,7 +6,7 @@ namespace FITLIFENETWORKPROYECTO.Services.Interfaces
     {
         public Task<List<ReporteRecaudacionSede>> GetRecaudacionSede(int? año, int? mes);
 
-        public Task<List<AuditoriaAptoMedico>> GetAccesoDenegadoApto();
+        public Task<List<AuditoriaAptoMedico>> GetAccesoDenegadoApto(DateTime? desde, DateTime? hasta);
 
         public Task<List<AuditoriaAccesoDto>> GetAuditoriaAccesosDenegadosAsync();
 
@@ -14,15 +14,15 @@ namespace FITLIFENETWORKPROYECTO.Services.Interfaces
 
         public Task<List<AuditoriaEquipamientoDto>> GetAuditoriaEquipamientoAsync();
 
-        public Task<List<PremiosCanjeados>> GetPremiosCanjeados(string estadoCanje, int minMeses);
+        public Task<List<PremiosCanjeados>> GetPremiosCanjeados(string? estadoCanje, int minMeses);
 
         public Task<List<Top3Productos>> GetTop3Productos(int? año);
 
-        public Task<List<ReporteReservaTT>> GetReporteReserva(DateTime Fecha1, DateTime Fecha2, string Estado1, string Estado2);
+        public Task<List<ReporteReservaTT>> GetReporteReserva(DateTime desde, DateTime hasta, string disciplina1, string disciplina2);
 
-        public Task<List<EvaluacionEstadistica>> GetEvaluacionesEstadistica();
+        public Task<List<EvaluacionEstadistica>> GetEvaluacionesEstadistica(DateTime desde, DateTime hasta);
 
-        public Task<List<ControlAptoMedico>> GetControlAptosMedicos();
+        public Task<List<ControlAptoMedico>> GetControlAptosMedicos(string? estados);
 
         public Task<List<RentabilidadConvenio>> GetRentabilidadConvenios(string? Estado);
 

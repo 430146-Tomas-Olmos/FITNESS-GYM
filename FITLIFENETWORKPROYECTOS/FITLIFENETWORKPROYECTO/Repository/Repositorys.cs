@@ -59,9 +59,13 @@ namespace FITLIFENETWORKPROYECTO.Repositories
             return await db.ReporteRecaudacionSedes.FromSqlRaw(query, año, mes).ToListAsync();
         }
 
-        public async Task<List<AuditoriaAptoMedico>> GetAccesoDenegadoApto()
+        public async Task<List<AuditoriaAptoMedico>> GetAccesoDenegadoApto(DateTime? desde, DateTime? hasta)
         {
-            string query = @"
+            // Rango de fechas ingresado por el usuario (por defecto: último año). El día "hasta" se incluye completo.
+            var fechaDesde = (desde ?? DateTime.Today.AddYears(-1)).Date;
+            var fechaHasta = (hasta ?? DateTime.Today).Date.AddDays(1);
+
+            return await db.AuditoriaAptoMedicos.FromSql($@"
                             SELECT
                                   S.id_socio AS IdSocio,
                                   PER.dni AS Dni,
@@ -78,7 +82,8 @@ namespace FITLIFENETWORKPROYECTO.Repositories
                             LEFT JOIN APTOS_MEDICOS AM ON S.id_socio = AM.id_socio
                             WHERE AL.acceso_permitido = 0
                               AND (AL.motivo_rechazo LIKE '%apto%' OR AL.motivo_rechazo LIKE '%vencid%')
-                              AND AL.fecha_hora_marcado >= DATEADD(YEAR, -1, GETDATE())
+                              AND AL.fecha_hora_marcado >= {fechaDesde}
+                              AND AL.fecha_hora_marcado < {fechaHasta}
                             GROUP BY
                                 S.id_socio,
                                 PER.dni,
@@ -88,8 +93,7 @@ namespace FITLIFENETWORKPROYECTO.Repositories
                                 AM.fecha_vencimiento,
                                 AM.medico_firmante
                             HAVING COUNT(AL.id_acceso) >= 1
-                            ORDER BY IntentosDenegados DESC, UltimoIntentoDenegado DESC;";
-            return await db.AuditoriaAptoMedicos.FromSqlRaw(query).ToListAsync();
+                            ORDER BY IntentosDenegados DESC, UltimoIntentoDenegado DESC").ToListAsync();
         }
 
         public async Task<List<LogAccesosDenegado>> GetAuditoriaAccesosDenegadosAsync()
@@ -122,10 +126,12 @@ namespace FITLIFENETWORKPROYECTO.Repositories
                 .ToListAsync();
         }
 
-        public async Task<List<PremiosCanjeados>> GetPremiosCanjeados(string estadoCanje, int minMeses)
+        public async Task<List<PremiosCanjeados>> GetPremiosCanjeados(string? estadoCanje, int minMeses)
         {
-            return await db.Database.SqlQuery<PremiosCanjeados>(
-                    $"EXEC sp_AuditoriaPremiosCanjeados @EstadoCanje = {estadoCanje}, @MinimoMesesAntiguedad = {minMeses}").ToListAsync();
+            // Los valores viajan como parámetros SQL (no se concatenan), por eso no hay inyección.
+            return await db.PremioCanjeadoDtos
+                .FromSql($"EXEC sp_AuditoriaPremiosCanjeados @EstadoCanje = {estadoCanje}, @MinimoMesesAntiguedad = {minMeses}")
+                .ToListAsync();
         }
 
         public async Task<List<Top3Productos>> GetTop3Productos(int? año)
@@ -174,44 +180,47 @@ namespace FITLIFENETWORKPROYECTO.Repositories
             return await db.Top3Productos.FromSqlRaw(query).ToListAsync();
         }
 
-        public async Task<List<ReporteReservaTT>> GetReporteReserva(DateTime Fecha1, DateTime Fecha2, string Estado1, string Estado2)
+        public async Task<List<ReporteReservaTT>> GetReporteReserva(DateTime desde, DateTime hasta, string disciplina1, string disciplina2)
         {
-            //Busque como hacer Tablas Temporales y siempre decian que era un bardo, que era mas facil mandan el cuerpo de la tabla y listo, asiq eso hice
-            string query = @$"
-                                SELECT
-                                    R.id_reserva,
-                                    P.nombre,
-                                    P.apellido,
-                                    C.fecha_clase,
-                                    C.hora_inicio,
-                                    D.nombre_disciplina,
-                                    R.estado_reserva
-                                FROM RESERVAS R
-                                INNER JOIN SOCIOS S
-                                    ON R.id_socio = S.id_socio
-                                INNER JOIN PERSONAS P
-                                    ON S.id_persona = P.id_persona
-                                INNER JOIN CLASES C
-                                    ON R.id_clase = C.id_clase
-                                INNER JOIN DISCIPLINAS D
-                                    ON C.id_disciplina = D.id_disciplina
-                                WHERE D.nombre_disciplina IN ('{Estado1}', '{Estado2}')
-                                AND MONTH(C.fecha_clase) BETWEEN MONTH('{Fecha1}') AND MONTH('{Fecha2}');";
+            // Filtros: rango de fechas (BETWEEN) y pertenencia a una lista de disciplinas (IN).
+            var fechaDesde = desde.Date;
+            var fechaHasta = hasta.Date.AddDays(1);
 
-            return await db.ReporteReservaTT.FromSqlRaw(query, Fecha1, Fecha2, Estado1, Estado2).ToListAsync();
+            return await db.ReporteReservaTT.FromSql($@"
+                                SELECT
+                                    R.id_reserva AS IdReserva,
+                                    P.nombre AS Nombre,
+                                    P.apellido AS Apellido,
+                                    C.fecha_clase AS FechaClase,
+                                    C.hora_inicio AS HoraInicio,
+                                    D.nombre_disciplina AS NombreDisciplina,
+                                    R.estado_reserva AS EstadoReserva
+                                FROM RESERVAS R
+                                INNER JOIN SOCIOS S ON R.id_socio = S.id_socio
+                                INNER JOIN PERSONAS P ON S.id_persona = P.id_persona
+                                INNER JOIN CLASES C ON R.id_clase = C.id_clase
+                                INNER JOIN DISCIPLINAS D ON C.id_disciplina = D.id_disciplina
+                                WHERE D.nombre_disciplina IN ({disciplina1}, {disciplina2})
+                                  AND C.fecha_clase >= {fechaDesde}
+                                  AND C.fecha_clase < {fechaHasta}
+                                ORDER BY C.fecha_clase, C.hora_inicio").ToListAsync();
         }
 
-        public async Task<List<EvaluacionEstadistica>> GetEvaluacionesEstadistica()
+        public async Task<List<EvaluacionEstadistica>> GetEvaluacionesEstadistica(DateTime desde, DateTime hasta)
         {
-            string query = @$"
-                                SELECT 
-                                    SED.nombre_sede AS [Sede Consultorio],
-                                    CONCAT(P_PROF.apellido, ', ', P_PROF.nombre) AS [Profesional a Cargo],
-                                    R.nombre_rol AS [Especialidad],
-                                    COUNT(EF.id_evaluacion) AS [Evaluaciones Realizadas],
-                                    ROUND(AVG(EF.peso_kg), 2) AS [Peso Promedio (kg)],
-                                    ROUND(AVG(EF.porcentaje_grasa), 2) AS [% Grasa Promedio],
-                                    ROUND(AVG(EF.porcentaje_masa_muscular), 2) AS [% Masa Muscular Promedio]
+            // Rango de fechas del turno (por defecto: último año). Solo turnos ATENDIDOS, como en el enunciado.
+            var fechaDesde = desde.Date;
+            var fechaHasta = hasta.Date.AddDays(1);
+
+            return await db.EvaluacionEstadisticas.FromSql($@"
+                                SELECT
+                                    SED.nombre_sede AS SedeConsultorio,
+                                    CONCAT(P_PROF.apellido, ', ', P_PROF.nombre) AS ProfesionalACargo,
+                                    R.nombre_rol AS Especialidad,
+                                    COUNT(EF.id_evaluacion) AS EvaluacionesRealizadas,
+                                    ROUND(AVG(EF.peso_kg), 2) AS PesoPromedioKg,
+                                    ROUND(AVG(EF.porcentaje_grasa), 2) AS PorcentajeGrasaPromedio,
+                                    ROUND(AVG(EF.porcentaje_masa_muscular), 2) AS PorcentajeMasaMuscularPromedio
                                 FROM EVALUACIONES_FISICAS EF
                                 INNER JOIN TURNOS T ON EF.id_turno = T.id_turno
                                 INNER JOIN SEDES SED ON T.id_sede = SED.id_sede
@@ -219,51 +228,57 @@ namespace FITLIFENETWORKPROYECTO.Repositories
                                 INNER JOIN PERSONAS P_PROF ON E.id_persona = P_PROF.id_persona
                                 INNER JOIN ROLES R ON E.id_rol = R.id_rol
                                 INNER JOIN ESTADOS_TURNO ET ON T.id_estado_turno = ET.id_estado_turno
-                                GROUP BY 
+                                WHERE ET.nombre_estado = 'ATENDIDO'
+                                  AND T.fecha_turno >= {fechaDesde}
+                                  AND T.fecha_turno < {fechaHasta}
+                                GROUP BY
                                     SED.id_sede,
                                     SED.nombre_sede,
                                     P_PROF.apellido,
                                     P_PROF.nombre,
                                     R.nombre_rol
                                 HAVING COUNT(EF.id_evaluacion) >= 1
-                                ORDER BY 
+                                ORDER BY
                                     SED.nombre_sede ASC,
-                                    [Evaluaciones Realizadas] DESC";
-
-            return await db.EvaluacionEstadisticas.FromSqlRaw(query).ToListAsync();
+                                    EvaluacionesRealizadas DESC").ToListAsync();
         }
 
-        public async Task<List<ControlAptoMedico>> GetControlAptosMedicos()
+        public async Task<List<ControlAptoMedico>> GetControlAptosMedicos(List<string> estados)
         {
-            string query = @"
-            SELECT 
-                s.id_socio AS NumeroSocio,
-                p.dni AS Dni,
-                p.apellido + ', ' + p.nombre AS NombreCompleto,
-                p.telefono AS Telefono,
-                a.fecha_emision AS FechaEmision,
-                a.fecha_vencimiento AS FechaVencimiento,
-                CASE
-                    WHEN a.fecha_vencimiento IS NULL THEN 'SIN APTA MEDICA'
-                    WHEN a.fecha_vencimiento < CAST(GETDATE() AS DATE) THEN 'VENCIDO'
-                    WHEN a.fecha_vencimiento <= DATEADD(DAY, 30, CAST(GETDATE() AS DATE)) THEN 'PROXIMO A VENCER'
-                    ELSE 'VIGENTE'
-                END AS EstadoAptoMedico
-            FROM APTOS_MEDICOS a
-            JOIN SOCIOS s ON a.id_socio = s.id_socio
-            JOIN PERSONAS p ON p.id_persona = s.id_persona;";
+            // Consulta base componible (sin ';' ni ORDER BY): el filtro por pertenencia (IN) se agrega con LINQ.
+            var query = db.ControlAptoMedicos.FromSqlRaw(@"
+                SELECT
+                    s.id_socio AS NumeroSocio,
+                    p.dni AS Dni,
+                    p.apellido + ', ' + p.nombre AS NombreCompleto,
+                    p.telefono AS Telefono,
+                    a.fecha_emision AS FechaEmision,
+                    a.fecha_vencimiento AS FechaVencimiento,
+                    CASE
+                        WHEN a.fecha_vencimiento IS NULL THEN 'SIN APTA MEDICA'
+                        WHEN a.fecha_vencimiento < CAST(GETDATE() AS DATE) THEN 'VENCIDO'
+                        WHEN a.fecha_vencimiento <= DATEADD(DAY, 30, CAST(GETDATE() AS DATE)) THEN 'PROXIMO A VENCER'
+                        ELSE 'VIGENTE'
+                    END AS EstadoAptoMedico
+                FROM APTOS_MEDICOS a
+                JOIN SOCIOS s ON a.id_socio = s.id_socio
+                JOIN PERSONAS p ON p.id_persona = s.id_persona");
 
-            return await db.ControlAptoMedicos.FromSqlRaw(query).ToListAsync();
+            if (estados.Count > 0)
+            {
+                query = query.Where(x => estados.Contains(x.EstadoAptoMedico!));
+            }
+
+            return await query.OrderBy(x => x.FechaVencimiento).ToListAsync();
         }
 
         public async Task<List<RentabilidadConvenio>> GetRentabilidadConvenios(string? Estado)
         {
-            var filtro = string.IsNullOrWhiteSpace(Estado)
-                ? "1 = 1"
-                : $"SOC.estado_cuenta = '{Estado.Trim()}'";
+            // Estado de cuenta opcional (comparación). Va como parámetro SQL: si viene vacío no filtra.
+            var estado = string.IsNullOrWhiteSpace(Estado) ? null : Estado.Trim().ToUpperInvariant();
 
-            string query = $@"
-                            SELECT 
+            return await db.RentabilidadConvenios.FromSql($@"
+                            SELECT
                                 CE.razon_social AS EmpresaConvenio,
                                 CE.cuit AS Cuit,
                                 CE.porcentaje_descuento AS PorcentajeDescuentoAcordado,
@@ -276,17 +291,15 @@ namespace FITLIFENETWORKPROYECTO.Repositories
                             INNER JOIN SOCIOS SOC ON CE.id_convenio = SOC.id_convenio
                             INNER JOIN CONTRATOS_MEMBRESIA CM ON SOC.id_socio = CM.id_socio
                             INNER JOIN CUOTAS_COBROS CC ON CM.id_contrato = CC.id_contrato
-                            WHERE {filtro}
-                            GROUP BY 
+                            WHERE ({estado} IS NULL OR SOC.estado_cuenta = {estado})
+                            GROUP BY
                                 CE.id_convenio,
                                 CE.razon_social,
                                 CE.cuit,
                                 CE.porcentaje_descuento
-                            ORDER BY 
+                            ORDER BY
                                 MontoCobrado DESC,
-                                SociosAdheridos DESC;";
-
-            return await db.RentabilidadConvenios.FromSqlRaw(query).ToListAsync();
+                                SociosAdheridos DESC").ToListAsync();
         }
 
         public async Task<List<Models.Tablas.Socio>> GetSociosAsync()

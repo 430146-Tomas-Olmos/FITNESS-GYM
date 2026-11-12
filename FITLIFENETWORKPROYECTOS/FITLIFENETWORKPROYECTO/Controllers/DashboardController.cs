@@ -31,11 +31,11 @@ public class DashboardController : ControllerBase
     }
 
     [HttpGet("aptos-medicos")]
-    public async Task<IActionResult> GetControlAptosMedicos()
+    public async Task<IActionResult> GetControlAptosMedicos([FromQuery] string? estados)
     {
         try
         {
-            return Ok(await _services.GetControlAptosMedicos());
+            return Ok(await _services.GetControlAptosMedicos(estados));
         }
         catch (Exception ex)
         {
@@ -44,11 +44,11 @@ public class DashboardController : ControllerBase
     }
 
     [HttpGet("accesos-denegados")]
-    public async Task<IActionResult> GetAccesosDenegados()
+    public async Task<IActionResult> GetAccesosDenegados([FromQuery] DateTime? desde, [FromQuery] DateTime? hasta)
     {
         try
         {
-            return Ok(await _services.GetAccesoDenegadoApto());
+            return Ok(await _services.GetAccesoDenegadoApto(desde, hasta));
         }
         catch (Exception ex)
         {
@@ -127,6 +127,49 @@ public class DashboardController : ControllerBase
         try
         {
             return Ok(await _services.GetCostosMantenimientoAsync());
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpGet("premios-canjeados")]
+    public async Task<IActionResult> GetPremiosCanjeados([FromQuery] string? estado, [FromQuery] int minMeses = 6)
+    {
+        try
+        {
+            return Ok(await _services.GetPremiosCanjeados(estado, minMeses));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpGet("reporte-reservas")]
+    public async Task<IActionResult> GetReporteReservas(
+        [FromQuery] DateTime desde,
+        [FromQuery] DateTime hasta,
+        [FromQuery] string disciplina1,
+        [FromQuery] string? disciplina2)
+    {
+        try
+        {
+            return Ok(await _services.GetReporteReserva(desde, hasta, disciplina1, disciplina2 ?? string.Empty));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    [HttpGet("evaluaciones")]
+    public async Task<IActionResult> GetEvaluacionesEstadistica([FromQuery] DateTime desde, [FromQuery] DateTime hasta)
+    {
+        try
+        {
+            return Ok(await _services.GetEvaluacionesEstadistica(desde, hasta));
         }
         catch (Exception ex)
         {

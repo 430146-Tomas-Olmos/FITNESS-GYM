@@ -15,9 +15,18 @@ namespace FITLIFENETWORKPROYECTO.Services
             this.repo = repo;
         }
 
-        public async Task<List<AuditoriaAptoMedico>> GetAccesoDenegadoApto()
+        public async Task<List<AuditoriaAptoMedico>> GetAccesoDenegadoApto(DateTime? desde, DateTime? hasta)
         {
-            return await repo.GetAccesoDenegadoApto();
+            ValidarRangoFechas(desde, hasta);
+            return await repo.GetAccesoDenegadoApto(desde, hasta);
+        }
+
+        private static void ValidarRangoFechas(DateTime? desde, DateTime? hasta)
+        {
+            if (desde.HasValue && hasta.HasValue && desde.Value.Date > hasta.Value.Date)
+            {
+                throw new ArgumentException("La fecha 'desde' no puede ser posterior a la fecha 'hasta'.");
+            }
         }
 
         public async Task<List<AuditoriaAccesoDto>> GetAuditoriaAccesosDenegadosAsync()
@@ -69,19 +78,35 @@ namespace FITLIFENETWORKPROYECTO.Services
             }).ToList();
         }
 
-        public async Task<List<ControlAptoMedico>> GetControlAptosMedicos()
+        public async Task<List<ControlAptoMedico>> GetControlAptosMedicos(string? estados)
         {
-            return await repo.GetControlAptosMedicos();
+            var validos = new[] { "VENCIDO", "PROXIMO A VENCER", "VIGENTE", "SIN APTA MEDICA" };
+            var lista = (estados ?? string.Empty)
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(e => e.ToUpperInvariant())
+                .ToList();
+
+            if (lista.Any(e => !validos.Contains(e)))
+            {
+                throw new ArgumentException("Estado de apto médico inválido. Use: " + string.Join(", ", validos) + ".");
+            }
+            return await repo.GetControlAptosMedicos(lista);
         }
 
-        public async Task<List<EvaluacionEstadistica>> GetEvaluacionesEstadistica()
+        public async Task<List<EvaluacionEstadistica>> GetEvaluacionesEstadistica(DateTime desde, DateTime hasta)
         {
-            return await repo.GetEvaluacionesEstadistica();
+            ValidarRangoFechas(desde, hasta);
+            return await repo.GetEvaluacionesEstadistica(desde, hasta);
         }
 
-        public async Task<List<PremiosCanjeados>> GetPremiosCanjeados(string estadoCanje, int minMeses)
+        public async Task<List<PremiosCanjeados>> GetPremiosCanjeados(string? estadoCanje, int minMeses)
         {
-            return await repo.GetPremiosCanjeados(estadoCanje, minMeses);
+            if (minMeses < 0)
+            {
+                throw new ArgumentException("Los meses de antigüedad no pueden ser negativos.");
+            }
+            var estado = string.IsNullOrWhiteSpace(estadoCanje) ? null : estadoCanje.Trim().ToUpperInvariant();
+            return await repo.GetPremiosCanjeados(estado, minMeses);
         }
 
         public async Task<List<ReporteRecaudacionSede>> GetRecaudacionSede(int? año, int? mes)
@@ -105,17 +130,19 @@ namespace FITLIFENETWORKPROYECTO.Services
             return await repo.GetRentabilidadConvenios(Estado);
         }
 
-        public async Task<List<ReporteReservaTT>> GetReporteReserva(DateTime Fecha1, DateTime Fecha2, string Estado1, string Estado2)
+        public async Task<List<ReporteReservaTT>> GetReporteReserva(DateTime desde, DateTime hasta, string disciplina1, string disciplina2)
         {
-            if(Estado1 == null || Estado2 == null)
+            if (string.IsNullOrWhiteSpace(disciplina1))
             {
-                throw new ArgumentNullException();
+                throw new ArgumentException("Debe indicar al menos una disciplina.");
             }
-            if (Fecha1 > DateTime.Today || Fecha2 > DateTime.Today)
+            if (desde.Date > hasta.Date)
             {
-                throw new ArgumentException();
+                throw new ArgumentException("La fecha 'desde' no puede ser posterior a la fecha 'hasta'.");
             }
-            return await repo.GetReporteReserva(Fecha1, Fecha2, Estado1, Estado2);
+            var d1 = disciplina1.Trim();
+            var d2 = string.IsNullOrWhiteSpace(disciplina2) ? d1 : disciplina2.Trim();
+            return await repo.GetReporteReserva(desde, hasta, d1, d2);
         }
 
         public async Task<List<Top3Productos>> GetTop3Productos(int? año)

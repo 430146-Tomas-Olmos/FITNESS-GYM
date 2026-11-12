@@ -1,3 +1,4 @@
+using FITLIFENETWORKPROYECTO.Infrastructure;
 using FITLIFENETWORKPROYECTO.Middleware;
 using FITLIFENETWORKPROYECTO.Models.Context;
 using FITLIFENETWORKPROYECTO.Repositories;
@@ -24,8 +25,7 @@ builder.Services.AddControllers()
 builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException("No se encontró la cadena de conexión 'DefaultConnection'.");
+var connectionString = ConnectionResolver.Resolve(builder.Configuration);
 
 builder.Services.AddDbContext<FITLIFENETWORKDbContext>(options =>
     options.UseSqlServer(connectionString));
@@ -78,6 +78,20 @@ app.MapGet("/api/health", () => Results.Ok(new
     message = "FitLife Network backend activo",
     timestampUtc = DateTime.UtcNow
 }));
+
+app.MapGet("/api/health/db", async (FITLIFENETWORKDbContext db) =>
+{
+    try
+    {
+        var conectado = await db.Database.CanConnectAsync();
+        var usuarios = conectado ? await db.Usuarios.CountAsync() : 0;
+        return Results.Ok(new { conectado, servidor = ConnectionResolver.ServidorUsado, usuarios, intentos = ConnectionResolver.Intentos });
+    }
+    catch (Exception ex)
+    {
+        return Results.Json(new { conectado = false, error = ex.Message, intentos = ConnectionResolver.Intentos }, statusCode: 500);
+    }
+});
 
 app.MapControllers();
 

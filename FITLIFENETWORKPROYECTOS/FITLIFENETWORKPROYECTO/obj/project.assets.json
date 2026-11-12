@@ -3329,11 +3329,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\leo\\Documents\\GitHub\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj",
+      "projectUniqueName": "C:\\Users\\leo\\Desktop\\FITLIFE_NETWORK_listo\\FITLIFE_NETWORK_listo\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj",
       "projectName": "FITLIFENETWORKPROYECTO",
-      "projectPath": "C:\\Users\\leo\\Documents\\GitHub\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj",
+      "projectPath": "C:\\Users\\leo\\Desktop\\FITLIFE_NETWORK_listo\\FITLIFE_NETWORK_listo\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\FITLIFENETWORKPROYECTO.csproj",
       "packagesPath": "C:\\Users\\leo\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\leo\\Documents\\GitHub\\FITNESS-GYM\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\obj\\",
+      "outputPath": "C:\\Users\\leo\\Desktop\\FITLIFE_NETWORK_listo\\FITLIFE_NETWORK_listo\\FITLIFENETWORKPROYECTOS\\FITLIFENETWORKPROYECTO\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "D:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
