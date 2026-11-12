@@ -1476,6 +1476,94 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID('dbo.sp_AuditoriaPremiosCanjeados', 'P') IS NOT NULL
+    DROP PROCEDURE dbo.sp_AuditoriaPremiosCanjeados;
+GO
+
+CREATE PROCEDURE dbo.sp_AuditoriaPremiosCanjeados
+    @EstadoCanje           VARCHAR(20) = NULL,   -- PENDIENTE | CANJEADO | VENCIDO (NULL = todos)
+    @MinimoMesesAntiguedad INT         = 6
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        S.id_socio                                               AS IdSocio,
+        PER.dni                                                  AS Dni,
+        CONCAT(PER.apellido, ', ', PER.nombre)                   AS Socio,
+        S.fecha_ingreso_alta                                     AS FechaAlta,
+        DATEDIFF(MONTH, S.fecha_ingreso_alta, GETDATE())         AS AntiguedadRealMeses,
+        PC.nombre_premio                                         AS PremioCatalogo,
+        PC.meses_antiguedad_requeridos                           AS MesesExigidos,
+        PO.fecha_otorgamiento                                    AS FechaOtorgado,
+        PO.estado_canje                                          AS EstadoCanje,
+        ISNULL(PER.email, '')                                    AS EmailContacto
+    FROM PREMIOS_OTORGADOS PO
+    INNER JOIN PREMIOS_CATALOGO PC ON PO.id_premio  = PC.id_premio
+    INNER JOIN SOCIOS           S  ON PO.id_socio   = S.id_socio
+    INNER JOIN PERSONAS         PER ON S.id_persona = PER.id_persona
+    WHERE DATEDIFF(MONTH, S.fecha_ingreso_alta, GETDATE()) >= @MinimoMesesAntiguedad
+      AND (@EstadoCanje IS NULL OR PO.estado_canje = @EstadoCanje)
+    ORDER BY AntiguedadRealMeses DESC, PO.fecha_otorgamiento DESC;
+END;
+GO
+
+-- Ejemplo de ejecucion
+EXEC dbo.sp_AuditoriaPremiosCanjeados @EstadoCanje = 'PENDIENTE', @MinimoMesesAntiguedad = 6;
+GO
+
+--/* ---------------------------------------------------------------------------
+--   2) Chequeo de datos: filas disponibles para cada reporte (filtros por defecto)
+--   --------------------------------------------------------------------------- */
+--SELECT 'C1  Recaudacion por sede y plan (mes actual)' AS Reporte, COUNT(*) AS Filas
+--FROM (
+--    SELECT S.id_sede, P.id_plan
+--    FROM CUOTAS_COBROS CC
+--    JOIN CONTRATOS_MEMBRESIA CM ON CC.id_contrato = CM.id_contrato
+--    JOIN SEDES  S ON CM.id_sede = S.id_sede
+--    JOIN PLANES P ON CM.id_plan = P.id_plan
+--    WHERE CC.fecha_pago IS NOT NULL
+--      AND YEAR(CC.fecha_pago)  = YEAR(GETDATE())
+--      AND MONTH(CC.fecha_pago) = MONTH(GETDATE())
+--    GROUP BY S.id_sede, P.id_plan
+--) x
+--UNION ALL
+--SELECT 'C2  Accesos denegados por apto (ultimo anio)', COUNT(*)
+--FROM ACCESOS_LOG
+--WHERE acceso_permitido = 0
+--  AND (motivo_rechazo LIKE '%apto%' OR motivo_rechazo LIKE '%vencid%')
+--  AND fecha_hora_marcado >= DATEADD(YEAR, -1, GETDATE())
+--UNION ALL
+--SELECT 'C3  Aptos medicos (todos los estados)', COUNT(*)
+--FROM APTOS_MEDICOS
+--UNION ALL
+--SELECT 'C4  Convenios con socios adheridos', COUNT(DISTINCT id_convenio)
+--FROM SOCIOS
+--WHERE id_convenio IS NOT NULL
+--UNION ALL
+--SELECT 'C5  Premios con 6+ meses de antiguedad', COUNT(*)
+--FROM PREMIOS_OTORGADOS PO
+--JOIN SOCIOS S ON S.id_socio = PO.id_socio
+--WHERE DATEDIFF(MONTH, S.fecha_ingreso_alta, GETDATE()) >= 6
+--UNION ALL
+--SELECT 'C6  Ventas del anio actual (vista de ventas)', COUNT(*)
+--FROM vw_VentasDetalladasProductos
+--WHERE YEAR(fecha_hora_venta) = YEAR(GETDATE())
+--UNION ALL
+--SELECT 'C7  Reservas de clases (hoy -14 a hoy +10 dias)', COUNT(*)
+--FROM RESERVAS R
+--JOIN CLASES C ON R.id_clase = C.id_clase
+--WHERE C.fecha_clase >= DATEADD(DAY, -14, CAST(GETDATE() AS DATE))
+--  AND C.fecha_clase <  DATEADD(DAY,  11, CAST(GETDATE() AS DATE))
+--UNION ALL
+--SELECT 'C8  Evaluaciones de turnos ATENDIDOS (ultimo anio)', COUNT(*)
+--FROM EVALUACIONES_FISICAS EF
+--JOIN TURNOS T         ON EF.id_turno = T.id_turno
+--JOIN ESTADOS_TURNO ET ON ET.id_estado_turno = T.id_estado_turno
+--WHERE ET.nombre_estado = 'ATENDIDO'
+--  AND T.fecha_turno >= DATEADD(YEAR, -1, CAST(GETDATE() AS DATE));
+--GO
+
 -- Indice: UX_PERSONAS_DNI. Mejora las consultas y evita duplicados cuando corresponde.
     CREATE UNIQUE INDEX UX_PERSONAS_DNI ON PERSONAS(dni);
 -- Indice: UX_PRODUCTOS_CODIGO_BARRAS. Mejora las consultas y evita duplicados cuando corresponde.
