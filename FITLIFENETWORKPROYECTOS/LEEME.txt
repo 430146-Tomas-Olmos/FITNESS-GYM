@@ -1,0 +1,29 @@
+FITLIFE NETWORK - COMO ABRIRLO
+==============================
+
+REQUISITOS (una sola vez en cada PC)
+  1. SDK de .NET 10  -> https://dotnet.microsoft.com/download
+  2. SQL Server (Express o similar) con la base FITLIFENETWORKdb ya creada.
+  3. Internet la primera vez (descarga paquetes NuGet).
+
+PASOS
+  1. Descomprimir TODO el .zip en una carpeta (no abrir desde adentro del zip).
+  2. Doble clic en  iniciar.bat
+  3. Se abre el navegador en http://localhost:5275
+  4. Usuario: gerente.general   Clave: 123456  (o los que tengan en su base)
+
+LA CONEXION A LA BASE ES AUTOMATICA
+  El programa prueba varios nombres de servidor (.\SQLEXPRESS, localhost,
+  (localdb)\MSSQLLocalDB, etc.) y usa el primero que tenga la base.
+  En la ventana negra se ve a cual se conecto.
+
+SI ALGO FALLA
+  - Abrir  http://localhost:5275/api/health/db
+      "conectado": true  y  "usuarios": N  -> la base esta bien.
+      "conectado": false -> mirar "intentos" para ver que servidor fallo.
+  - Si el servidor de SQL de tu PC tiene otro nombre, agregalo en
+    FITLIFENETWORKPROYECTO\appsettings.json, en la lista "DatabaseServers".
+  - Si el nombre de la base es otro, cambiar "DatabaseName" en ese mismo archivo.
+  - Si en el login dice "Usuario y/o contraseña incorrectos", la tabla
+    Usuarios de tu base no tiene ese usuario/clave.
+  - Si el puerto 5275 esta ocupado, cerrar la otra ventana de FitLife.
