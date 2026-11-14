@@ -1744,8 +1744,28 @@ namespace FITLIFENETWORKPROYECTO.Repositories
             var existente = await db.Equipamientos.FirstOrDefaultAsync(e => e.IdEquipo == idEquipo);
             if (existente == null) return false;
 
-            existente.EstadoOperativo = "FUERA DE SERVICIO";
-            await db.SaveChangesAsync();
+            // Eliminacion real. Se limpian antes las referencias que impedirian el DELETE (FK):
+            // - incidencias: el equipo es opcional, se desvincula
+            // - auditoria y mantenimientos del equipo: se eliminan junto con el equipo
+            using var transaction = await db.Database.BeginTransactionAsync();
+            try
+            {
+                await db.IncidenciasReclamos
+                    .Where(i => i.IdEquipo == idEquipo)
+                    .ExecuteUpdateAsync(s => s.SetProperty(i => i.IdEquipo, (int?)null));
+                await db.AuditoriaEquipamientos.Where(a => a.IdEquipo == idEquipo).ExecuteDeleteAsync();
+                await db.MantenimientoEquipamientos.Where(m => m.IdEquipo == idEquipo).ExecuteDeleteAsync();
+
+                db.Equipamientos.Remove(existente);
+                await db.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+
             return true;
         }
 
@@ -2124,6 +2144,7 @@ namespace FITLIFENETWORKPROYECTO.Repositories
         {
             return await db.Proveedores
                 .AsNoTracking()
+                .Where(p => p.Activo)
                 .OrderBy(p => p.RazonSocial)
                 .ToListAsync();
         }

@@ -21,7 +21,16 @@
             }
             if (!res.ok) {
                 const text = await res.text();
-                throw new Error(text || `Error ${res.status}`);
+                let msg = text;
+                try {
+                    const j = JSON.parse(text);
+                    if (typeof j === 'string') msg = j;
+                    else if (j && j.errors) msg = Object.values(j.errors).flat().join(' ');
+                    else if (j) msg = j.error || j.message || j.title || text;
+                } catch (e) { /* texto plano */ }
+                if (res.status === 401) msg = 'Sesión expirada o no iniciada. Vuelva a iniciar sesión.';
+                if (res.status === 403) msg = 'No tiene permisos para realizar esta acción.';
+                throw new Error(msg || `Error ${res.status}`);
             }
             if (res.status === 204) return null;
             return await res.json();
@@ -45,6 +54,57 @@
             opt.textContent = text;
             selectEl.appendChild(opt);
         });
+    }
+
+    function esc(v) {
+        return String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    }
+
+    function nombreCompleto(p) {
+        return [p?.apellido, p?.nombre].filter(Boolean).join(', ') || '-';
+    }
+
+    function hoy() {
+        const d = new Date();
+        const p = n => String(n).padStart(2, '0');
+        return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+    }
+
+    // Fechas "solo fecha" (yyyy-MM-dd): se formatean sin pasar por Date para evitar el corrimiento de un dia por zona horaria.
+    function formatFechaSolo(v) {
+        if (!v) return '-';
+        const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v));
+        if (m) return `${m[3]}/${m[2]}/${m[1]}`;
+        const d = new Date(v);
+        return isNaN(d) ? '-' : d.toLocaleDateString('es-AR');
+    }
+
+    function formatFechaHora(v) {
+        if (!v) return '-';
+        const d = new Date(v);
+        if (isNaN(d)) return '-';
+        return d.toLocaleDateString('es-AR') + ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function money(n) {
+        return '$' + Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function errorRow(cols, msg) {
+        return `<tr><td colspan="${cols}" class="text-center text-danger py-4">${esc(msg)}</td></tr>`;
+    }
+
+    // Muestra un aviso (alert de Bootstrap) justo antes del elemento indicado.
+    function showNotice(beforeEl, message, type = 'warning') {
+        if (!beforeEl || !beforeEl.parentNode) return;
+        const prev = beforeEl.parentNode.querySelector('[data-notice]');
+        if (prev) prev.remove();
+        if (!message) return;
+        const div = document.createElement('div');
+        div.setAttribute('data-notice', '1');
+        div.className = `alert alert-${type} py-2`;
+        div.textContent = message;
+        beforeEl.parentNode.insertBefore(div, beforeEl);
     }
 
     // ==========================================
@@ -75,13 +135,9 @@
                 equiposList = await apiFetch(url) || [];
                 renderEquipos(equiposList);
             } catch (e) {
-                console.warn('Error loading equipos, using fallback', e);
-                equiposList = [
-                    { idEquipo: 1, nombreMaquina: 'Cinta de correr Profesional', idSede: 1, nombreSede: 'Casa Central', numeroSerie: 'EQ-1001', fechaAdquisicion: '2024-05-12', estadoOperativo: 'ACTIVO' },
-                    { idEquipo: 2, nombreMaquina: 'Bicicleta estática Magnética', idSede: 2, nombreSede: 'Belgrano', numeroSerie: 'EQ-1002', fechaAdquisicion: '2023-09-03', estadoOperativo: 'EN MANTENIMIENTO' },
-                    { idEquipo: 3, nombreMaquina: 'Máquina Polea Multigym', idSede: 1, nombreSede: 'Casa Central', numeroSerie: 'EQ-1003', fechaAdquisicion: '2025-01-15', estadoOperativo: 'ACTIVO' }
-                ];
-                renderEquipos(equiposList);
+                console.warn('Error loading equipos', e);
+                equiposList = [];
+                if (tbody) tbody.innerHTML = errorRow(6, 'No se pudieron cargar los equipos: ' + e.message);
             }
         }
 
@@ -89,11 +145,11 @@
             if (!tbody) return;
             tbody.innerHTML = items.map(eq => `
                 <tr>
-                    <td class="fw-semibold">${eq.nombreMaquina || eq.nombre || '-'}</td>
-                    <td>${eq.nombreSede || (eq.idSede ? 'Sede ' + eq.idSede : 'Casa Central')}</td>
-                    <td><code>${eq.numeroSerie || '-'}</code></td>
-                    <td>${eq.fechaAdquisicion ? new Date(eq.fechaAdquisicion).toLocaleDateString() : '-'}</td>
-                    <td><span class="badge text-bg-${eq.estadoOperativo === 'ACTIVO' ? 'success' : 'warning'}">${eq.estadoOperativo || 'ACTIVO'}</span></td>
+                    <td class="fw-semibold">${esc(eq.nombreMaquina || eq.nombre || '-')}</td>
+                    <td>${esc(eq.nombreSede || (eq.idSede ? 'Sede ' + eq.idSede : '-'))}</td>
+                    <td><code>${esc(eq.numeroSerie || '-')}</code></td>
+                    <td>${formatFechaSolo(eq.fechaAdquisicion)}</td>
+                    <td><span class="badge text-bg-${eq.estadoOperativo === 'ACTIVO' ? 'success' : 'warning'}">${esc(eq.estadoOperativo || 'ACTIVO')}</span></td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary me-1" data-edit-eq="${eq.idEquipo}">Editar</button>
                         <button class="btn btn-sm btn-outline-danger" data-del-eq="${eq.idEquipo}">Eliminar</button>
@@ -110,9 +166,9 @@
                         document.getElementById('equipoId').value = eq.idEquipo;
                         document.getElementById('equipoNombre').value = eq.nombreMaquina || '';
                         document.getElementById('equipoNumeroSerie').value = eq.numeroSerie || '';
-                        document.getElementById('equipoFechaAdquisicion').value = eq.fechaAdquisicion ? eq.fechaAdquisicion.split('T')[0] : '';
+                        document.getElementById('equipoFechaAdquisicion').value = eq.fechaAdquisicion ? String(eq.fechaAdquisicion).split('T')[0] : '';
                         if (document.getElementById('equipoEstadoOperativo')) document.getElementById('equipoEstadoOperativo').value = eq.estadoOperativo || 'ACTIVO';
-                        if (sedeSelect) sedeSelect.value = eq.idSede || 1;
+                        if (sedeSelect) sedeSelect.value = eq.idSede || '';
                         bootstrap.Modal.getOrCreateInstance(modalEl).show();
                     }
                 });
@@ -121,15 +177,17 @@
             tbody.querySelectorAll('[data-del-eq]').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const id = Number(btn.getAttribute('data-del-eq'));
-                    if (confirm('¿Desea eliminar este equipo?')) {
-                        try {
-                            await apiFetch(`/api/Equipos/${id}`, { method: 'DELETE' });
-                            alert('Equipo eliminado');
-                        } catch (err) {
-                            console.warn('Error deleting equipo', err);
-                        }
-                        await loadEquipos(sedeFilter?.value);
+                    const eq = equiposList.find(x => x.idEquipo === id);
+                    const msg = `¿Desea eliminar el equipo "${eq?.nombreMaquina || '#' + id}"?\n\nSe eliminarán también sus mantenimientos registrados y se desvincularán sus incidencias.`;
+                    if (!confirm(msg)) return;
+                    try {
+                        await apiFetch(`/api/Equipos/${id}`, { method: 'DELETE' });
+                        alert('Equipo eliminado');
+                    } catch (err) {
+                        console.warn('Error deleting equipo', err);
+                        alert('No se pudo eliminar el equipo: ' + err.message);
                     }
+                    await loadEquipos(sedeFilter?.value);
                 });
             });
         }
@@ -145,11 +203,15 @@
 
         form?.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!sedeSelect?.value) {
+                alert('Seleccione la sede');
+                return;
+            }
             const payload = {
-                idSede: Number(sedeSelect?.value || 1),
+                idSede: Number(sedeSelect.value),
                 nombreMaquina: document.getElementById('equipoNombre').value.trim(),
                 numeroSerie: document.getElementById('equipoNumeroSerie').value.trim(),
-                fechaAdquisicion: document.getElementById('equipoFechaAdquisicion').value ? new Date(document.getElementById('equipoFechaAdquisicion').value).toISOString() : new Date().toISOString(),
+                fechaAdquisicion: document.getElementById('equipoFechaAdquisicion').value || hoy(),
                 estadoOperativo: document.getElementById('equipoEstadoOperativo')?.value || 'ACTIVO'
             };
 
@@ -163,7 +225,8 @@
                 }
             } catch (err) {
                 console.warn('Error saving equipo', err);
-                alert('Equipo guardado en el sistema');
+                alert('No se pudo guardar el equipo: ' + err.message);
+                return;
             }
 
             editingEquipoId = null;
@@ -182,25 +245,33 @@
     async function initIncidencias() {
         const tbody = document.getElementById('incidenciasTableBody');
         const form = document.getElementById('incidenciaForm');
+        const socioSelect = document.getElementById('incidenciaIdSocio');
         const sedeSelect = document.getElementById('incidenciaIdSede');
         const eqSelect = document.getElementById('incidenciaIdEquipo');
         const estadoSelect = document.getElementById('incidenciaIdEstado');
         const modalEl = document.getElementById('modalIncidencia');
 
         async function loadSelects() {
-            try {
-                const [sedes, equipos, estados] = await Promise.all([
-                    apiFetch('/api/Sedes').catch(() => []),
-                    apiFetch('/api/Equipos').catch(() => []),
-                    apiFetch('/api/EstadosReclamo').catch(() => [])
-                ]);
+            const fallos = [];
+            const safe = (url, nombre) => apiFetch(url).catch(err => {
+                console.warn('Error cargando', url, err);
+                fallos.push(`${nombre} (${err.message})`);
+                return [];
+            });
 
-                fillSelect(sedeSelect, sedes, 'idSede', 'nombreSede', 'Seleccione sede');
-                fillSelect(eqSelect, equipos, 'idEquipo', e => `${e.nombreMaquina || e.nombre} (${e.numeroSerie || ''})`, 'Seleccione equipo (opcional)');
-                fillSelect(estadoSelect, estados.length ? estados : [{ idEstadoReclamo: 1, nombreEstado: 'PENDIENTE' }, { idEstadoReclamo: 2, nombreEstado: 'EN REVISIÓN' }, { idEstadoReclamo: 3, nombreEstado: 'RESUELTO' }], 'idEstadoReclamo', 'nombreEstado', 'Seleccione estado');
-            } catch (e) {
-                console.warn('Error loading selects for incidencias', e);
-            }
+            const [socios, sedes, equipos, estados] = await Promise.all([
+                safe('/api/Socios', 'socios'),
+                safe('/api/Sedes', 'sedes'),
+                safe('/api/Equipos', 'equipos'),
+                safe('/api/EstadosReclamo', 'estados')
+            ]);
+
+            fillSelect(socioSelect, socios, 'idSocio', s => `${nombreCompleto(s)} (DNI ${s.dni || '-'})`, 'Seleccione socio');
+            fillSelect(sedeSelect, sedes, 'idSede', 'nombreSede', 'Seleccione sede');
+            fillSelect(eqSelect, equipos, 'idEquipo', e => `${e.nombreMaquina || e.nombre} (${e.numeroSerie || ''})`, 'Sin equipo / no aplica');
+            fillSelect(estadoSelect, estados, 'idEstadoReclamo', 'nombreEstado', 'Seleccione estado');
+
+            if (fallos.length) showNotice(document.querySelector('main .card'), 'No se pudieron cargar: ' + fallos.join('; '));
         }
 
         async function loadIncidencias() {
@@ -209,10 +280,8 @@
                 const incs = await apiFetch('/api/Incidencias') || [];
                 renderIncidencias(incs);
             } catch (e) {
-                renderIncidencias([
-                    { idReclamo: 1, descripcion: 'Cinta de correr con vibración en motor', idSede: 1, nombreSede: 'Casa Central', estadoReclamo: 'PENDIENTE', fechaRegistro: '2026-11-09' },
-                    { idReclamo: 2, descripcion: 'Bicicleta estática sin resistencia', idSede: 2, nombreSede: 'Belgrano', estadoReclamo: 'EN REVISIÓN', fechaRegistro: '2026-11-10' }
-                ]);
+                console.warn('Error loading incidencias', e);
+                tbody.innerHTML = errorRow(7, 'No se pudieron cargar las incidencias: ' + e.message);
             }
         }
 
@@ -220,37 +289,44 @@
             if (!tbody) return;
             tbody.innerHTML = items.map(inc => `
                 <tr>
-                    <td>#${inc.idReclamo || '-'}</td>
-                    <td>${inc.nombreSede || (inc.idSede ? 'Sede ' + inc.idSede : 'Casa Central')}</td>
-                    <td>${inc.descripcion || '-'}</td>
-                    <td>${inc.fechaRegistro ? new Date(inc.fechaRegistro).toLocaleDateString() : 'Reciente'}</td>
-                    <td><span class="badge text-bg-${inc.estadoReclamo === 'RESUELTO' ? 'success' : 'warning'}">${inc.estadoReclamo || 'PENDIENTE'}</span></td>
+                    <td>#${inc.idReclamo ?? '-'}</td>
+                    <td>${esc(inc.nombreSede || (inc.idSede ? 'Sede ' + inc.idSede : '-'))}</td>
+                    <td>${esc(inc.nombreEquipo || '-')}</td>
+                    <td>${esc(inc.descripcion || '-')}</td>
+                    <td>${formatFechaHora(inc.fechaRegistro)}</td>
+                    <td><span class="badge text-bg-${inc.estadoReclamo === 'RESUELTO' ? 'success' : 'warning'}">${esc(inc.estadoReclamo || '-')}</span></td>
                     <td>
                         <button class="btn btn-sm btn-outline-danger" data-del-inc="${inc.idReclamo}">Eliminar</button>
                     </td>
                 </tr>
-            `).join('') || '<tr><td colspan="6" class="text-center text-secondary py-4">Sin incidencias registradas</td></tr>';
+            `).join('') || '<tr><td colspan="7" class="text-center text-secondary py-4">Sin incidencias registradas</td></tr>';
 
             tbody.querySelectorAll('[data-del-inc]').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const id = Number(btn.getAttribute('data-del-inc'));
-                    if (confirm('¿Desea eliminar esta incidencia?')) {
-                        try {
-                            await apiFetch(`/api/Incidencias/${id}`, { method: 'DELETE' });
-                            alert('Incidencia eliminada');
-                        } catch (err) {}
-                        await loadIncidencias();
+                    if (!confirm('¿Desea eliminar esta incidencia?')) return;
+                    try {
+                        await apiFetch(`/api/Incidencias/${id}`, { method: 'DELETE' });
+                        alert('Incidencia eliminada');
+                    } catch (err) {
+                        alert('No se pudo eliminar la incidencia: ' + err.message);
                     }
+                    await loadIncidencias();
                 });
             });
         }
 
         form?.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!socioSelect?.value || !sedeSelect?.value || !estadoSelect?.value) {
+                alert('Seleccione socio, sede y estado');
+                return;
+            }
             const payload = {
-                idSede: Number(sedeSelect?.value || 1),
+                idSocio: Number(socioSelect.value),
+                idSede: Number(sedeSelect.value),
                 idEquipo: eqSelect?.value ? Number(eqSelect.value) : null,
-                idEstadoReclamo: Number(estadoSelect?.value || 1),
+                idEstadoReclamo: Number(estadoSelect.value),
                 descripcion: document.getElementById('incidenciaDescripcion').value.trim()
             };
 
@@ -258,7 +334,9 @@
                 await apiFetch('/api/Incidencias', { method: 'POST', body: JSON.stringify(payload) });
                 alert('Incidencia registrada con éxito');
             } catch (err) {
-                alert('Incidencia registrada');
+                console.warn('POST /api/Incidencias error', err);
+                alert('No se pudo registrar la incidencia: ' + err.message);
+                return;
             }
 
             form.reset();
@@ -278,20 +356,26 @@
         const form = document.getElementById('mantenimientoForm');
         const eqSelect = document.getElementById('mantenimientoIdEquipo');
         const provSelect = document.getElementById('mantenimientoIdProveedor');
+        const fechaInput = document.getElementById('mantenimientoFecha');
         const modalEl = document.getElementById('modalMantenimiento');
 
         async function loadSelects() {
-            try {
-                const [equipos, proveedores] = await Promise.all([
-                    apiFetch('/api/Equipos').catch(() => []),
-                    apiFetch('/api/Proveedores').catch(() => [])
-                ]);
+            const fallos = [];
+            const safe = (url, nombre) => apiFetch(url).catch(err => {
+                console.warn('Error cargando', url, err);
+                fallos.push(`${nombre} (${err.message})`);
+                return [];
+            });
 
-                fillSelect(eqSelect, equipos, 'idEquipo', e => `${e.nombreMaquina || e.nombre} (${e.numeroSerie || ''})`, 'Seleccione equipo');
-                fillSelect(provSelect, proveedores, 'idProveedor', 'razonSocial', 'Seleccione proveedor/técnico');
-            } catch (e) {
-                console.warn('Error loading selects for mantenimientos', e);
-            }
+            const [equipos, proveedores] = await Promise.all([
+                safe('/api/Equipos', 'equipos'),
+                safe('/api/Proveedores', 'proveedores')
+            ]);
+
+            fillSelect(eqSelect, equipos, 'idEquipo', e => `${e.nombreMaquina || e.nombre} (${e.numeroSerie || ''})`, 'Seleccione equipo');
+            fillSelect(provSelect, proveedores, 'idProveedor', 'razonSocial', 'Sin proveedor / técnico interno');
+
+            if (fallos.length) showNotice(document.querySelector('main .card'), 'No se pudieron cargar: ' + fallos.join('; '));
         }
 
         async function loadMantenimientos() {
@@ -300,9 +384,8 @@
                 const mant = await apiFetch('/api/Mantenimiento') || [];
                 renderMantenimientos(mant);
             } catch (e) {
-                renderMantenimientos([
-                    { idMantenimiento: 1, idEquipo: 1, nombreMaquina: 'Cinta de correr', tecnico: 'Nicolás Vega', fechaMantenimiento: '2026-11-12', costo: 15000, descripcion: 'Cambio de correa de tracción' }
-                ]);
+                console.warn('Error loading mantenimientos', e);
+                tbody.innerHTML = errorRow(7, 'No se pudieron cargar los mantenimientos: ' + e.message);
             }
         }
 
@@ -310,12 +393,12 @@
             if (!tbody) return;
             tbody.innerHTML = items.map(m => `
                 <tr>
-                    <td>#${m.idMantenimiento || '-'}</td>
-                    <td>${m.nombreMaquina || (m.idEquipo ? 'Equipo #' + m.idEquipo : 'Equipo')}</td>
-                    <td>${m.tecnico || m.nombreProveedor || 'Servicio Técnico'}</td>
-                    <td>${m.fechaMantenimiento ? new Date(m.fechaMantenimiento).toLocaleDateString() : 'Reciente'}</td>
-                    <td>$${Number(m.costo || 0).toLocaleString()}</td>
-                    <td>${m.descripcion || '-'}</td>
+                    <td>#${m.idMantenimiento ?? '-'}</td>
+                    <td>${esc(m.nombreEquipo || (m.idEquipo ? 'Equipo #' + m.idEquipo : '-'))}</td>
+                    <td>${esc(m.nombreProveedor || 'Sin proveedor')}</td>
+                    <td>${formatFechaSolo(m.fechaMantenimiento)}</td>
+                    <td>${money(m.costo)}</td>
+                    <td>${esc(m.descripcion || '-')}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-danger" data-del-mant="${m.idMantenimiento}">Eliminar</button>
                     </td>
@@ -325,23 +408,33 @@
             tbody.querySelectorAll('[data-del-mant]').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const id = Number(btn.getAttribute('data-del-mant'));
-                    if (confirm('¿Desea eliminar este registro?')) {
-                        try {
-                            await apiFetch(`/api/Mantenimiento/${id}`, { method: 'DELETE' });
-                            alert('Mantenimiento eliminado');
-                        } catch (err) {}
-                        await loadMantenimientos();
+                    if (!confirm('¿Desea eliminar este registro?')) return;
+                    try {
+                        await apiFetch(`/api/Mantenimiento/${id}`, { method: 'DELETE' });
+                        alert('Mantenimiento eliminado');
+                    } catch (err) {
+                        alert('No se pudo eliminar el mantenimiento: ' + err.message);
                     }
+                    await loadMantenimientos();
                 });
             });
         }
 
+        modalEl?.addEventListener('show.bs.modal', () => {
+            if (fechaInput && !fechaInput.value) fechaInput.value = hoy();
+        });
+
         form?.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!eqSelect?.value) {
+                alert('Seleccione el equipo');
+                return;
+            }
             const payload = {
-                idEquipo: Number(eqSelect?.value || 1),
-                idProveedor: Number(provSelect?.value || 1),
-                fechaMantenimiento: document.getElementById('mantenimientoFecha').value ? new Date(document.getElementById('mantenimientoFecha').value).toISOString() : new Date().toISOString(),
+                idEquipo: Number(eqSelect.value),
+                idProveedor: provSelect?.value ? Number(provSelect.value) : null,
+                // El backend espera una fecha (yyyy-MM-dd); enviar un ISO con hora provocaba un error de formato.
+                fechaMantenimiento: fechaInput?.value || hoy(),
                 costo: Math.max(0, parseFloat(document.getElementById('mantenimientoCosto').value || 0)),
                 descripcion: document.getElementById('mantenimientoDescripcion').value.trim()
             };
@@ -350,7 +443,9 @@
                 await apiFetch('/api/Mantenimiento', { method: 'POST', body: JSON.stringify(payload) });
                 alert('Mantenimiento registrado con éxito');
             } catch (err) {
-                alert('Mantenimiento registrado');
+                console.warn('POST /api/Mantenimiento error', err);
+                alert('No se pudo registrar el mantenimiento: ' + err.message);
+                return;
             }
 
             form.reset();
@@ -378,11 +473,9 @@
                 provList = await apiFetch('/api/Proveedores') || [];
                 renderProveedores(provList);
             } catch (e) {
-                provList = [
-                    { idProveedor: 1, razonSocial: 'Distribuidora Fitness SA', cuit: '30-12345678-7', telefono: '011-4567-8900', email: 'ventas@distribuidorafitness.com' },
-                    { idProveedor: 2, razonSocial: 'Equipamientos Gym Pro', cuit: '30-87654321-3', telefono: '011-4321-0987', email: 'contacto@gympro.com' }
-                ];
-                renderProveedores(provList);
+                console.warn('Error loading proveedores', e);
+                provList = [];
+                tbody.innerHTML = errorRow(5, 'No se pudieron cargar los proveedores: ' + e.message);
             }
         }
 
@@ -390,10 +483,10 @@
             if (!tbody) return;
             tbody.innerHTML = items.map(p => `
                 <tr>
-                    <td class="fw-semibold">${p.razonSocial || '-'}</td>
-                    <td><code>${p.cuit || '-'}</code></td>
-                    <td>${p.telefono || '-'}</td>
-                    <td>${p.email || '-'}</td>
+                    <td class="fw-semibold">${esc(p.razonSocial || '-')}</td>
+                    <td><code>${esc(p.cuit || '-')}</code></td>
+                    <td>${esc(p.telefono || '-')}</td>
+                    <td>${esc(p.email || '-')}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary me-1" data-edit-prov="${p.idProveedor}">Editar</button>
                         <button class="btn btn-sm btn-outline-danger" data-del-prov="${p.idProveedor}">Eliminar</button>
@@ -419,13 +512,16 @@
             tbody.querySelectorAll('[data-del-prov]').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const id = Number(btn.getAttribute('data-del-prov'));
-                    if (confirm('¿Desea eliminar este proveedor?')) {
-                        try {
-                            await apiFetch(`/api/Proveedores/${id}`, { method: 'DELETE' });
-                            alert('Proveedor eliminado');
-                        } catch (err) {}
-                        await loadProveedores();
+                    const p = provList.find(x => x.idProveedor === id);
+                    if (!confirm(`¿Desea eliminar al proveedor "${p?.razonSocial || '#' + id}"?`)) return;
+                    try {
+                        const res = await apiFetch(`/api/Proveedores/${id}`, { method: 'DELETE' });
+                        alert(res?.message || 'Proveedor eliminado');
+                    } catch (err) {
+                        console.warn('Error deleting proveedor', err);
+                        alert('No se pudo eliminar el proveedor: ' + err.message);
                     }
+                    await loadProveedores();
                 });
             });
         }
@@ -453,7 +549,9 @@
                     alert('Proveedor creado');
                 }
             } catch (err) {
-                alert('Proveedor guardado');
+                console.warn('Error saving proveedor', err);
+                alert('No se pudo guardar el proveedor: ' + err.message);
+                return;
             }
 
             editingProvId = null;

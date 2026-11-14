@@ -1460,6 +1460,8 @@ public partial class FITLIFENETWORKDbContext : DbContext
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasColumnName("telefono");
+            entity.Property(e => e.Activo)
+                .HasColumnName("activo");
         });
 
         modelBuilder.Entity<Provincia>(entity =>
@@ -1743,6 +1745,7 @@ public partial class FITLIFENETWORKDbContext : DbContext
             entity.ToTable("USUARIOS");
 
             entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Activo).HasColumnName("activo");
             entity.Property(e => e.Contrasena)
                 .HasMaxLength(255)
                 .IsUnicode(false)

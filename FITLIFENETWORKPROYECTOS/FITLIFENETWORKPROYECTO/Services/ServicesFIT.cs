@@ -1506,7 +1506,11 @@ namespace FITLIFENETWORKPROYECTO.Services
             {
                 IdVenta = v.IdVenta,
                 IdSocio = v.IdSocio,
+                NombreSocio = v.IdSocioNavigation?.IdPersonaNavigation != null
+                    ? $"{v.IdSocioNavigation.IdPersonaNavigation.Apellido}, {v.IdSocioNavigation.IdPersonaNavigation.Nombre}"
+                    : string.Empty,
                 IdSede = v.IdSede,
+                NombreSede = v.IdSedeNavigation?.NombreSede ?? string.Empty,
                 IdVendedor = v.IdVendedor,
                 IdFormaPago = v.IdFormaPago,
                 FechaHoraVenta = v.FechaHoraVenta,
@@ -1600,7 +1604,9 @@ namespace FITLIFENETWORKPROYECTO.Services
                 IdReclamo = i.IdReclamo,
                 IdSocio = i.IdSocio,
                 IdEquipo = i.IdEquipo,
+                NombreEquipo = i.IdEquipoNavigation?.NombreMaquina ?? string.Empty,
                 IdSede = i.IdSede,
+                NombreSede = i.IdSedeNavigation?.NombreSede ?? string.Empty,
                 IdTecnicoAsignado = i.IdTecnicoAsignado,
                 IdEstadoReclamo = i.IdEstadoReclamo,
                 EstadoReclamo = i.IdEstadoReclamoNavigation?.NombreEstado ?? string.Empty,
@@ -1616,9 +1622,14 @@ namespace FITLIFENETWORKPROYECTO.Services
                 throw new ArgumentNullException(nameof(dto));
             }
 
+            if (!dto.IdSocio.HasValue || dto.IdSocio.Value <= 0)
+            {
+                throw new ArgumentException("Debe seleccionar el socio que registra la incidencia.");
+            }
+
             var creada = await repo.CreateIncidenciaAsync(new Models.Tablas.IncidenciasReclamo
             {
-                IdSocio = dto.IdSocio ?? 0,
+                IdSocio = dto.IdSocio.Value,
                 IdEquipo = dto.IdEquipo,
                 IdSede = dto.IdSede,
                 IdTecnicoAsignado = dto.IdTecnicoAsignado,

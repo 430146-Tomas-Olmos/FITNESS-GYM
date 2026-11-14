@@ -501,6 +501,8 @@ namespace FITLIFENETWORKPROYECTO.DTO
         public int IdVenta { get; set; }
         public int? IdSocio { get; set; }
         public int IdSede { get; set; }
+        public string NombreSocio { get; set; } = string.Empty;
+        public string NombreSede { get; set; } = string.Empty;
         public int IdVendedor { get; set; }
         public int IdFormaPago { get; set; }
         public DateTime FechaHoraVenta { get; set; }
@@ -545,7 +547,9 @@ namespace FITLIFENETWORKPROYECTO.DTO
         public int IdReclamo { get; set; }
         public int? IdSocio { get; set; }
         public int? IdEquipo { get; set; }
+        public string NombreEquipo { get; set; } = string.Empty;
         public int IdSede { get; set; }
+        public string NombreSede { get; set; } = string.Empty;
         public int? IdTecnicoAsignado { get; set; }
         public int IdEstadoReclamo { get; set; }
         public string EstadoReclamo { get; set; } = string.Empty;

@@ -48,6 +48,7 @@ public class UsuariosController : ControllerBase
             var usuarios = await _db.Usuarios
                 .Include(u => u.Idrols)
                 .AsNoTracking()
+                .OrderBy(u => u.Id)
                 .ToListAsync();
 
             var dtos = usuarios.Select(u => new UsuarioItemDto
@@ -58,7 +59,7 @@ public class UsuariosController : ControllerBase
                 Email = $"{u.Nombre.ToLower().Replace(" ", ".")}@fitlife.com",
                 Rol = u.Idrols.Select(r => r.Rol).FirstOrDefault() ?? "Gerente General",
                 Sede = "Casa Central",
-                Estado = "Activo",
+                Estado = u.Activo ? "Activo" : "Inactivo",
                 UltimoAcceso = DateTime.Now.ToString("yyyy-MM-dd HH:mm")
             }).ToList();
 
@@ -86,7 +87,7 @@ public class UsuariosController : ControllerBase
                 Email = $"{u.Nombre.ToLower().Replace(" ", ".")}@fitlife.com",
                 Rol = u.Idrols.Select(r => r.Rol).FirstOrDefault() ?? "Gerente General",
                 Sede = "Casa Central",
-                Estado = "Activo",
+                Estado = u.Activo ? "Activo" : "Inactivo",
                 UltimoAcceso = DateTime.Now.ToString("yyyy-MM-dd HH:mm")
             });
         }
@@ -112,7 +113,8 @@ public class UsuariosController : ControllerBase
             var nuevoUsuario = new Usuario
             {
                 Nombre = nombreUsuario,
-                Contrasena = password
+                Contrasena = password,
+                Activo = !string.Equals(dto.Estado, "Inactivo", StringComparison.OrdinalIgnoreCase)
             };
 
             // Map rol
@@ -133,7 +135,7 @@ public class UsuariosController : ControllerBase
                 Email = !string.IsNullOrWhiteSpace(dto.Email) ? dto.Email : $"{nuevoUsuario.Nombre.ToLower()}@fitlife.com",
                 Rol = dto.Rol,
                 Sede = dto.Sede ?? "Casa Central",
-                Estado = dto.Estado ?? "Activo",
+                Estado = nuevoUsuario.Activo ? "Activo" : "Inactivo",
                 UltimoAcceso = DateTime.Now.ToString("yyyy-MM-dd HH:mm")
             });
         }
@@ -156,6 +158,11 @@ public class UsuariosController : ControllerBase
 
             if (!string.IsNullOrWhiteSpace(dto.Contrasena)) u.Contrasena = dto.Contrasena;
 
+            if (!string.IsNullOrWhiteSpace(dto.Estado))
+            {
+                u.Activo = !string.Equals(dto.Estado, "Inactivo", StringComparison.OrdinalIgnoreCase);
+            }
+
             if (!string.IsNullOrWhiteSpace(dto.Rol))
             {
                 var rol = await _db.RolesSistemas.FirstOrDefaultAsync(r => r.Rol == dto.Rol || r.Rol.Contains(dto.Rol));
@@ -175,7 +182,42 @@ public class UsuariosController : ControllerBase
                 Email = dto.Email ?? $"{u.Nombre.ToLower()}@fitlife.com",
                 Rol = dto.Rol,
                 Sede = dto.Sede ?? "Casa Central",
-                Estado = dto.Estado ?? "Activo",
+                Estado = u.Activo ? "Activo" : "Inactivo",
+                UltimoAcceso = DateTime.Now.ToString("yyyy-MM-dd HH:mm")
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { error = ex.Message });
+        }
+    }
+
+    [HttpPut("{id:int}/inactivar")]
+    public Task<IActionResult> Inactivar(int id) => CambiarEstado(id, false);
+
+    [HttpPut("{id:int}/activar")]
+    public Task<IActionResult> Activar(int id) => CambiarEstado(id, true);
+
+    // Cambia el estado SOLO del usuario indicado por id (no borra nada).
+    private async Task<IActionResult> CambiarEstado(int id, bool activo)
+    {
+        try
+        {
+            var u = await _db.Usuarios.Include(x => x.Idrols).FirstOrDefaultAsync(x => x.Id == id);
+            if (u == null) return NotFound(new { error = "El usuario no existe." });
+
+            u.Activo = activo;
+            await _db.SaveChangesAsync();
+
+            return Ok(new UsuarioItemDto
+            {
+                Id = u.Id,
+                Nombre = u.Nombre,
+                Alias = u.Nombre,
+                Email = $"{u.Nombre.ToLower().Replace(" ", ".")}@fitlife.com",
+                Rol = u.Idrols.Select(r => r.Rol).FirstOrDefault() ?? "Gerente General",
+                Sede = "Casa Central",
+                Estado = u.Activo ? "Activo" : "Inactivo",
                 UltimoAcceso = DateTime.Now.ToString("yyyy-MM-dd HH:mm")
             });
         }

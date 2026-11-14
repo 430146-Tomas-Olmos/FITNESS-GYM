@@ -15,6 +15,8 @@ public partial class Proveedore
 
     public string? Email { get; set; }
 
+    public bool Activo { get; set; } = true;
+
     public virtual ICollection<ComprasStock> ComprasStocks { get; set; } = new List<ComprasStock>();
 
     public virtual ICollection<MantenimientoEquipamiento> MantenimientoEquipamientos { get; set; } = new List<MantenimientoEquipamiento>();

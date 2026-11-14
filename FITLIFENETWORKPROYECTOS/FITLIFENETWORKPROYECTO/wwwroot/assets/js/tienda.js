@@ -21,7 +21,16 @@
             }
             if (!res.ok) {
                 const text = await res.text();
-                throw new Error(text || `Error ${res.status}`);
+                let msg = text;
+                try {
+                    const j = JSON.parse(text);
+                    if (typeof j === 'string') msg = j;
+                    else if (j && j.errors) msg = Object.values(j.errors).flat().join(' ');
+                    else if (j) msg = j.error || j.message || j.title || text;
+                } catch (e) { /* texto plano */ }
+                if (res.status === 401) msg = 'Sesión expirada o no iniciada. Vuelva a iniciar sesión.';
+                if (res.status === 403) msg = 'No tiene permisos para realizar esta acción.';
+                throw new Error(msg || `Error ${res.status}`);
             }
             if (res.status === 204) return null;
             return await res.json();
@@ -45,6 +54,44 @@
             opt.textContent = text;
             selectEl.appendChild(opt);
         });
+    }
+
+    function esc(v) {
+        return String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+    }
+
+    function nombreCompleto(p) {
+        return [p?.apellido, p?.nombre].filter(Boolean).join(', ') || '-';
+    }
+
+    function formatFecha(v) {
+        if (!v) return '-';
+        const d = new Date(v);
+        return isNaN(d) ? '-' : d.toLocaleDateString('es-AR');
+    }
+
+    function formatFechaHora(v) {
+        if (!v) return '-';
+        const d = new Date(v);
+        if (isNaN(d)) return '-';
+        return d.toLocaleDateString('es-AR') + ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function money(n) {
+        return '$' + Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // Muestra un aviso (alert de Bootstrap) justo antes del elemento indicado.
+    function showNotice(beforeEl, message, type = 'warning') {
+        if (!beforeEl || !beforeEl.parentNode) return;
+        const prev = beforeEl.parentNode.querySelector('[data-notice]');
+        if (prev) prev.remove();
+        if (!message) return;
+        const div = document.createElement('div');
+        div.setAttribute('data-notice', '1');
+        div.className = `alert alert-${type} py-2`;
+        div.textContent = message;
+        beforeEl.parentNode.insertBefore(div, beforeEl);
     }
 
     // ==========================================
@@ -170,32 +217,51 @@
 
         let saleItems = [];
         let productosList = [];
+        let empleadosList = [];
+
+        const empleadoLabel = e => {
+            const extra = [e.nombreRol, e.nombreSede].filter(Boolean).join(' - ');
+            return `${nombreCompleto(e)}${extra ? ' (' + extra + ')' : ''}`;
+        };
+
+        // El vendedor se elige por nombre; si se eligió sede se muestran primero los empleados de esa sede.
+        function fillVendedores() {
+            const idSede = Number(sedeSelect?.value || 0);
+            const deSede = idSede ? empleadosList.filter(e => e.idSede === idSede) : [];
+            fillSelect(vendedorSelect, deSede.length ? deSede : empleadosList, 'idEmpleado', empleadoLabel, 'Seleccione vendedor');
+        }
 
         async function loadSelects() {
-            try {
-                const [socios, sedes, formasPago, prods, empleados] = await Promise.all([
-                    apiFetch('/api/Socios').catch(() => []),
-                    apiFetch('/api/Sedes').catch(() => []),
-                    apiFetch('/api/FormasPago').catch(() => []),
-                    apiFetch('/api/Productos').catch(() => []),
-                    apiFetch('/api/Empleados').catch(() => [])
-                ]);
+            const fallos = [];
+            const safe = (url, nombre) => apiFetch(url).catch(err => {
+                console.warn('Error cargando', url, err);
+                fallos.push(`${nombre} (${err.message})`);
+                return [];
+            });
 
-                productosList = Array.isArray(prods) ? prods : [];
-                fillSelect(socioSelect, socios, 'idSocio', s => `${s.nombre || ''} ${s.apellido || ''} (DNI: ${s.dni || s.idSocio})`, 'Seleccione socio (opcional)');
-                fillSelect(sedeSelect, sedes, 'idSede', 'nombreSede', 'Seleccione sede');
+            const [socios, sedes, formasPago, prods, empleados] = await Promise.all([
+                safe('/api/Socios', 'socios'),
+                safe('/api/Sedes', 'sedes'),
+                safe('/api/FormasPago', 'formas de pago'),
+                safe('/api/Productos', 'productos'),
+                safe('/api/Empleados', 'vendedores')
+            ]);
 
-                const vendList = Array.isArray(empleados) && empleados.length
-                    ? empleados
-                    : [{ idEmpleado: 1, nombre: 'Vendedor Turno Mañana' }, { idEmpleado: 2, nombre: 'Vendedor Turno Tarde' }];
-                fillSelect(vendedorSelect, vendList, 'idEmpleado', e => `${e.nombre || ''} ${e.apellido || ''} (Legajo: ${e.legajo || e.idEmpleado})`, 'Seleccione vendedor');
+            productosList = Array.isArray(prods) ? prods : [];
+            empleadosList = Array.isArray(empleados) ? empleados : [];
 
-                fillSelect(formaPagoSelect, formasPago.length ? formasPago : [{ idFormaPago: 1, nombreFormaPago: 'Efectivo' }, { idFormaPago: 2, nombreFormaPago: 'Tarjeta Débito' }, { idFormaPago: 3, nombreFormaPago: 'Transferencia' }], 'idFormaPago', 'nombreFormaPago', 'Seleccione forma de pago');
-                fillSelect(prodSelect, productosList, 'idProducto', p => `${p.nombreProducto || p.nombre} - $${Number(p.precioActual || p.precio || 0).toLocaleString()}`, 'Seleccione producto');
-            } catch (e) {
-                console.warn('Error loading selects for ventas', e);
+            fillSelect(socioSelect, socios, 'idSocio', s => `${nombreCompleto(s)} (DNI ${s.dni || '-'})`, 'Consumidor final (sin socio)');
+            fillSelect(sedeSelect, sedes, 'idSede', 'nombreSede', 'Seleccione sede');
+            fillVendedores();
+            fillSelect(formaPagoSelect, formasPago, 'idFormaPago', 'nombreFormaPago', 'Seleccione forma de pago');
+            fillSelect(prodSelect, productosList, 'idProducto', p => `${p.nombreProducto || p.nombre} - ${money(p.precioActual || p.precio)}`, 'Seleccione producto');
+
+            if (fallos.length) {
+                showNotice(form, 'No se pudieron cargar: ' + fallos.join('; '));
             }
         }
+
+        sedeSelect?.addEventListener('change', fillVendedores);
 
         function renderItems() {
             if (!itemsBody) return;
@@ -205,16 +271,16 @@
                 sum += sub;
                 return `
                     <tr>
-                        <td>${item.nombre}</td>
+                        <td>${esc(item.nombre)}</td>
                         <td>${item.cantidad}</td>
-                        <td>$${item.precio.toLocaleString()}</td>
-                        <td>$${sub.toLocaleString()}</td>
+                        <td>${money(item.precio)}</td>
+                        <td>${money(sub)}</td>
                         <td><button type="button" class="btn btn-sm btn-outline-danger" data-remove-item="${idx}"><i class="bi bi-trash"></i></button></td>
                     </tr>
                 `;
             }).join('') || '<tr><td colspan="5" class="text-center text-secondary py-3">No hay productos agregados</td></tr>';
 
-            if (totalEl) totalEl.textContent = `$${sum.toLocaleString()}`;
+            if (totalEl) totalEl.textContent = money(sum);
 
             itemsBody.querySelectorAll('[data-remove-item]').forEach(btn => {
                 btn.addEventListener('click', () => {
@@ -234,12 +300,12 @@
                 return;
             }
             const precio = Number(prod.precioActual || prod.precio || 0);
-            saleItems.push({
-                idProducto: idProd,
-                nombre: prod.nombreProducto || prod.nombre,
-                cantidad: cant,
-                precio: precio
-            });
+            const existente = saleItems.find(i => i.idProducto === idProd);
+            if (existente) {
+                existente.cantidad += cant;
+            } else {
+                saleItems.push({ idProducto: idProd, nombre: prod.nombreProducto || prod.nombre, cantidad: cant, precio });
+            }
             cantInput.value = 1;
             renderItems();
         });
@@ -250,25 +316,32 @@
                 alert('Agregue al menos un producto a la venta');
                 return;
             }
+            if (!sedeSelect?.value || !vendedorSelect?.value || !formaPagoSelect?.value) {
+                alert('Seleccione sede, vendedor y forma de pago');
+                return;
+            }
+
             const payload = {
                 idSocio: socioSelect?.value ? Number(socioSelect.value) : null,
-                idSede: Number(sedeSelect?.value || 1),
-                idVendedor: Number(vendedorSelect?.value || 1),
-                idFormaPago: Number(formaPagoSelect?.value || 1),
+                idSede: Number(sedeSelect.value),
+                idVendedor: Number(vendedorSelect.value),
+                idFormaPago: Number(formaPagoSelect.value),
                 imputadoACuenta: document.getElementById('ventaImputado')?.checked || false,
                 items: saleItems.map(i => ({ idProducto: i.idProducto, cantidad: i.cantidad, precioUnitarioHistorico: i.precio }))
             };
 
             try {
-                await apiFetch('/api/Ventas', { method: 'POST', body: JSON.stringify(payload) });
-                alert('Venta registrada con éxito');
+                const venta = await apiFetch('/api/Ventas', { method: 'POST', body: JSON.stringify(payload) });
+                alert(`Venta #${venta?.idVenta ?? ''} registrada con éxito`);
             } catch (err) {
                 console.warn('POST /api/Ventas error', err);
-                alert('Venta procesada con éxito');
+                alert('No se pudo registrar la venta: ' + err.message);
+                return;
             }
 
             saleItems = [];
             form.reset();
+            fillVendedores();
             renderItems();
         });
 
@@ -283,6 +356,7 @@
         const form = document.getElementById('compraForm');
         const provSelect = document.getElementById('compraIdProveedor');
         const sedeSelect = document.getElementById('compraIdSede');
+        const fechaInput = document.getElementById('compraFecha');
         const prodSelect = document.getElementById('compraIdProducto');
         const cantInput = document.getElementById('compraCantidad');
         const costoInput = document.getElementById('compraPrecioCosto');
@@ -292,20 +366,31 @@
 
         let compraItems = [];
 
-        async function loadSelects() {
-            try {
-                const [proveedores, sedes, prods] = await Promise.all([
-                    apiFetch('/api/Proveedores').catch(() => []),
-                    apiFetch('/api/Sedes').catch(() => []),
-                    apiFetch('/api/Productos').catch(() => [])
-                ]);
+        function hoy() {
+            const d = new Date();
+            const p = n => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+        }
 
-                fillSelect(provSelect, proveedores, 'idProveedor', 'razonSocial', 'Seleccione proveedor');
-                fillSelect(sedeSelect, sedes, 'idSede', 'nombreSede', 'Seleccione sede');
-                fillSelect(prodSelect, prods, 'idProducto', 'nombreProducto', 'Seleccione producto');
-            } catch (e) {
-                console.warn('Error loading selects for compras', e);
-            }
+        async function loadSelects() {
+            const fallos = [];
+            const safe = (url, nombre) => apiFetch(url).catch(err => {
+                console.warn('Error cargando', url, err);
+                fallos.push(`${nombre} (${err.message})`);
+                return [];
+            });
+
+            const [proveedores, sedes, prods] = await Promise.all([
+                safe('/api/Proveedores', 'proveedores'),
+                safe('/api/Sedes', 'sedes'),
+                safe('/api/Productos', 'productos')
+            ]);
+
+            fillSelect(provSelect, proveedores, 'idProveedor', 'razonSocial', 'Seleccione proveedor');
+            fillSelect(sedeSelect, sedes, 'idSede', 'nombreSede', 'Seleccione sede');
+            fillSelect(prodSelect, prods, 'idProducto', 'nombreProducto', 'Seleccione producto');
+
+            if (fallos.length) showNotice(form, 'No se pudieron cargar: ' + fallos.join('; '));
         }
 
         async function loadHistoricoCompras() {
@@ -314,15 +399,16 @@
                 const compras = await apiFetch('/api/Compras') || [];
                 tbody.innerHTML = compras.map(c => `
                     <tr>
-                        <td>#${c.idCompra || '-'}</td>
-                        <td class="fw-semibold">${c.razonSocialProveedor || c.proveedor || c.razonSocial || 'Distribuidora Fitness SA'}</td>
-                        <td>${c.nombreSede || (c.idSede ? 'Sede ' + c.idSede : 'Casa Central')}</td>
-                        <td>${c.fechaCompra || c.fecha ? new Date(c.fechaCompra || c.fecha).toLocaleDateString() : 'Reciente'}</td>
-                        <td>$${Number(c.totalCompra || c.total || c.montoTotal || 0).toLocaleString()}</td>
+                        <td>#${c.idCompra ?? '-'}</td>
+                        <td class="fw-semibold">${esc(c.razonSocialProveedor || (c.idProveedor ? 'Proveedor #' + c.idProveedor : '-'))}</td>
+                        <td>${esc(c.nombreSede || (c.idSede ? 'Sede ' + c.idSede : '-'))}</td>
+                        <td>${formatFecha(c.fechaCompra)}</td>
+                        <td>${money(c.totalCompra)}</td>
                     </tr>
                 `).join('') || '<tr><td colspan="5" class="text-center text-secondary py-3">Sin compras registradas</td></tr>';
             } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary py-3">Sin compras registradas</td></tr>';
+                console.warn('Error cargando compras', e);
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-3">No se pudieron cargar las compras: ${esc(e.message)}</td></tr>`;
             }
         }
 
@@ -330,10 +416,10 @@
             if (!itemsBody) return;
             itemsBody.innerHTML = compraItems.map((item, idx) => `
                 <tr>
-                    <td>${item.nombre}</td>
+                    <td>${esc(item.nombre)}</td>
                     <td>${item.cantidad}</td>
-                    <td>$${item.costo.toLocaleString()}</td>
-                    <td>$${(item.cantidad * item.costo).toLocaleString()}</td>
+                    <td>${money(item.costo)}</td>
+                    <td>${money(item.cantidad * item.costo)}</td>
                     <td><button type="button" class="btn btn-sm btn-outline-danger" data-remove-citem="${idx}"><i class="bi bi-trash"></i></button></td>
                 </tr>
             `).join('') || '<tr><td colspan="5" class="text-center text-secondary py-3">No hay productos en la orden</td></tr>';
@@ -350,10 +436,14 @@
         btnAddItem?.addEventListener('click', () => {
             const idProd = Number(prodSelect?.value || 0);
             const cant = Math.max(1, parseInt(cantInput?.value || 1, 10));
-            const costo = Math.max(0, parseFloat(costoInput?.value || 0));
+            const costo = parseFloat(costoInput?.value || 0);
             const prodText = prodSelect?.options[prodSelect.selectedIndex]?.text || 'Producto';
             if (!idProd) {
                 alert('Seleccione un producto');
+                return;
+            }
+            if (!(costo > 0)) {
+                alert('Ingrese un costo unitario mayor a 0');
                 return;
             }
             compraItems.push({ idProducto: idProd, nombre: prodText, cantidad: cant, costo });
@@ -368,72 +458,35 @@
                 alert('Agregue al menos un producto a la orden de compra');
                 return;
             }
+            if (!provSelect?.value || !sedeSelect?.value) {
+                alert('Seleccione proveedor y sede');
+                return;
+            }
+
             const payload = {
-                idProveedor: Number(provSelect?.value || 1),
-                idSede: Number(sedeSelect?.value || 1),
-                detalles: compraItems.map(i => ({ idProducto: i.idProducto, cantidad: i.cantidad, precioCosto: i.costo }))
+                idProveedor: Number(provSelect.value),
+                idSede: Number(sedeSelect.value),
+                fechaCompra: `${fechaInput?.value || hoy()}T00:00:00`,
+                detalles: compraItems.map(i => ({ idProducto: i.idProducto, cantidad: i.cantidad, precioCostoUnitario: i.costo }))
             };
 
             try {
                 await apiFetch('/api/Compras', { method: 'POST', body: JSON.stringify(payload) });
                 alert('Compra registrada con éxito');
             } catch (err) {
-                alert('Orden de compra generada');
+                console.warn('POST /api/Compras error', err);
+                alert('No se pudo registrar la compra: ' + err.message);
+                return;
             }
 
             compraItems = [];
             form.reset();
+            if (fechaInput) fechaInput.value = hoy();
             renderCompraItems();
             await loadHistoricoCompras();
         });
 
-        await loadSelects();
-        renderCompraItems();
-        await loadHistoricoCompras();
-    }
-            });
-        }
-
-        btnAddItem?.addEventListener('click', () => {
-            const idProd = Number(prodSelect?.value || 0);
-            const cant = Math.max(1, parseInt(cantInput?.value || 1, 10));
-            const costo = Math.max(0, parseFloat(costoInput?.value || 0));
-            const prodText = prodSelect?.options[prodSelect.selectedIndex]?.text || 'Producto';
-            if (!idProd) {
-                alert('Seleccione un producto');
-                return;
-            }
-            compraItems.push({ idProducto: idProd, nombre: prodText, cantidad: cant, costo });
-            cantInput.value = 1;
-            costoInput.value = '';
-            renderCompraItems();
-        });
-
-        form?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!compraItems.length) {
-                alert('Agregue al menos un producto a la orden de compra');
-                return;
-            }
-            const payload = {
-                idProveedor: Number(provSelect?.value || 1),
-                idSede: Number(sedeSelect?.value || 1),
-                detalles: compraItems.map(i => ({ idProducto: i.idProducto, cantidad: i.cantidad, precioCosto: i.costo }))
-            };
-
-            try {
-                await apiFetch('/api/Compras', { method: 'POST', body: JSON.stringify(payload) });
-                alert('Compra registrada con éxito');
-            } catch (err) {
-                alert('Orden de compra generada');
-            }
-
-            compraItems = [];
-            form.reset();
-            renderCompraItems();
-            await loadHistoricoCompras();
-        });
-
+        if (fechaInput) fechaInput.value = hoy();
         await loadSelects();
         renderCompraItems();
         await loadHistoricoCompras();
@@ -497,28 +550,46 @@
         const empSelect = document.getElementById('cajaIdEmpleado');
         const tbody = document.getElementById('cajasTableBody');
 
-        try {
-            const [sedes, emp] = await Promise.all([
-                apiFetch('/api/Sedes').catch(() => []),
-                apiFetch('/api/Empleados').catch(() => [])
-            ]);
+        let empleadosList = [];
+
+        function fillEmpleados() {
+            const idSede = Number(sedeSelect?.value || 0);
+            const deSede = idSede ? empleadosList.filter(e => e.idSede === idSede) : [];
+            fillSelect(empSelect, deSede.length ? deSede : empleadosList, 'idEmpleado', e => nombreCompleto(e), 'Seleccione empleado');
+        }
+
+        async function loadSelects() {
+            const fallos = [];
+            const safe = (url, nombre) => apiFetch(url).catch(err => {
+                console.warn('Error cargando', url, err);
+                fallos.push(`${nombre} (${err.message})`);
+                return [];
+            });
+            const [sedes, emp] = await Promise.all([safe('/api/Sedes', 'sedes'), safe('/api/Empleados', 'empleados')]);
+            empleadosList = Array.isArray(emp) ? emp : [];
             fillSelect(sedeSelect, sedes, 'idSede', 'nombreSede', 'Seleccione sede');
-            fillSelect(empSelect, emp.length ? emp : [{ idEmpleado: 1, nombre: 'Operador Caja 1' }], 'idEmpleado', e => `${e.nombre || ''} ${e.apellido || ''}`, 'Seleccione empleado');
-        } catch (e) {}
+            fillEmpleados();
+            if (fallos.length) showNotice(form, 'No se pudieron cargar: ' + fallos.join('; '));
+        }
+
+        sedeSelect?.addEventListener('change', fillEmpleados);
 
         async function loadCajas() {
             if (!tbody) return;
             try {
                 const cajas = await apiFetch('/api/Cajas') || [];
                 tbody.innerHTML = cajas.map(c => {
-                    const estaAbierta = c.estado === 'ABIERTA' || (c.estado !== 'CERRADA' && c.abierta !== false);
+                    const estaAbierta = String(c.estado || '').toUpperCase() === 'ABIERTA';
                     return `
                     <tr>
-                        <td class="fw-semibold">${c.nombreSede || (c.idSede ? 'Sede ' + c.idSede : 'Casa Central')}</td>
-                        <td>${c.nombreEmpleado || (c.idEmpleado ? 'Empleado #' + c.idEmpleado : 'Operador')}</td>
-                        <td>${c.fechaApertura ? new Date(c.fechaApertura).toLocaleString() : '-'}</td>
-                        <td>$${Number(c.saldoInicial || 0).toLocaleString()}</td>
-                        <td><span class="badge text-bg-${estaAbierta ? 'success' : 'secondary'}">${estaAbierta ? 'ABIERTA' : 'CERRADA'}</span></td>
+                        <td class="fw-semibold">${esc(c.nombreSede || (c.idSede ? 'Sede ' + c.idSede : '-'))}</td>
+                        <td>${esc(c.nombreEmpleado || (c.idEmpleado ? 'Empleado #' + c.idEmpleado : '-'))}</td>
+                        <td>${formatFechaHora(c.fechaApertura)}</td>
+                        <td>${money(c.saldoInicial)}</td>
+                        <td>
+                            <span class="badge text-bg-${estaAbierta ? 'success' : 'secondary'}">${estaAbierta ? 'ABIERTA' : 'CERRADA'}</span>
+                            ${!estaAbierta && c.fechaCierre ? `<div class="small text-secondary mt-1">Cierre: ${formatFechaHora(c.fechaCierre)}</div>` : ''}
+                        </td>
                         <td>
                             ${estaAbierta
                                 ? `<button class="btn btn-sm btn-outline-warning" data-cerrar-caja="${c.idCaja}"><i class="bi bi-lock me-1"></i>Cerrar caja</button>`
@@ -532,41 +603,45 @@
                 tbody.querySelectorAll('[data-cerrar-caja]').forEach(btn => {
                     btn.addEventListener('click', async () => {
                         const id = Number(btn.getAttribute('data-cerrar-caja'));
-                        if (confirm(`¿Desea cerrar la caja #${id}?`)) {
-                            try {
-                                await apiFetch(`/api/Cajas/${id}/cerrar`, { method: 'PUT' });
-                                alert('Caja cerrada exitosamente');
-                            } catch (e) {
-                                console.warn('Error closing caja', e);
-                                alert('Estado de caja actualizado');
-                            }
-                            await loadCajas();
+                        if (!confirm(`¿Desea cerrar la caja #${id}?`)) return;
+                        try {
+                            await apiFetch(`/api/Cajas/${id}/cerrar`, { method: 'PUT' });
+                        } catch (e) {
+                            console.warn('Error closing caja', e);
+                            alert('No se pudo cerrar la caja: ' + e.message);
                         }
+                        await loadCajas();
                     });
                 });
 
                 tbody.querySelectorAll('[data-toggle-caja]').forEach(btn => {
                     btn.addEventListener('click', async () => {
                         const id = Number(btn.getAttribute('data-toggle-caja'));
+                        if (!confirm(`¿Desea reabrir la caja #${id}?`)) return;
                         try {
                             await apiFetch(`/api/Cajas/${id}/toggle-estado`, { method: 'PUT' });
-                            alert('Estado de caja actualizado');
                         } catch (e) {
                             console.warn('Error toggling caja', e);
+                            alert('No se pudo cambiar el estado de la caja: ' + e.message);
                         }
                         await loadCajas();
                     });
                 });
             } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-secondary py-3">Sin cajas registradas</td></tr>';
+                console.warn('Error cargando cajas', e);
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-3">No se pudieron cargar las cajas: ${esc(e.message)}</td></tr>`;
             }
         }
 
         form?.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (!sedeSelect?.value || !empSelect?.value) {
+                alert('Seleccione sede y empleado');
+                return;
+            }
             const payload = {
-                idSede: Number(sedeSelect?.value || 1),
-                idEmpleado: Number(empSelect?.value || 1),
+                idSede: Number(sedeSelect.value),
+                idEmpleado: Number(empSelect.value),
                 saldoInicial: Math.max(0, parseFloat(document.getElementById('cajaSaldoInicial')?.value || 0))
             };
 
@@ -574,13 +649,17 @@
                 await apiFetch('/api/Cajas', { method: 'POST', body: JSON.stringify(payload) });
                 alert('Caja abierta exitosamente');
             } catch (err) {
-                alert('Caja registrada');
+                console.warn('POST /api/Cajas error', err);
+                alert('No se pudo abrir la caja: ' + err.message);
+                return;
             }
 
             form.reset();
+            fillEmpleados();
             await loadCajas();
         });
 
+        await loadSelects();
         await loadCajas();
     }
 
@@ -652,37 +731,62 @@
     async function initDevoluciones() {
         const form = document.getElementById('devolucionForm');
         const ventaSelect = document.getElementById('devolucionIdVenta');
+        const empSelect = document.getElementById('devolucionIdEmpleado');
         const prodSelect = document.getElementById('devolucionIdProducto');
         const cantInput = document.getElementById('devolucionCantidad');
         const precioInput = document.getElementById('devolucionPrecio');
         const tbody = document.getElementById('devolucionesTableBody');
         let ventasList = [];
 
-        try {
-            const [prods, ventas] = await Promise.all([
-                apiFetch('/api/Productos').catch(() => []),
-                apiFetch('/api/Ventas').catch(() => [])
-            ]);
+        const ventaLabel = v =>
+            `Venta #${v.idVenta} - ${v.nombreSocio || 'Consumidor final'} - ${money(v.totalVenta)} (${formatFecha(v.fechaHoraVenta)})`;
+
+        async function loadSelects() {
+            const fallos = [];
+            const safe = (url, nombre) => apiFetch(url).catch(err => {
+                console.warn('Error cargando', url, err);
+                fallos.push(`${nombre} (${err.message})`);
+                return [];
+            });
+            const [ventas, empleados] = await Promise.all([safe('/api/Ventas', 'ventas'), safe('/api/Empleados', 'empleados')]);
             ventasList = Array.isArray(ventas) ? ventas : [];
-            fillSelect(prodSelect, prods, 'idProducto', 'nombreProducto', 'Seleccione producto');
-            fillSelect(ventaSelect, ventasList, 'idVenta', v => `Venta #${v.idVenta} - Total: $${Number(v.totalVenta || 0).toLocaleString()} (${v.fechaHoraVenta ? new Date(v.fechaHoraVenta).toLocaleDateString() : 'Reciente'})`, 'Seleccione venta');
-        } catch (e) {
-            console.warn('Error loading selects for devoluciones', e);
+            fillSelect(ventaSelect, ventasList, 'idVenta', ventaLabel, 'Seleccione venta');
+            fillSelect(empSelect, empleados, 'idEmpleado', e => nombreCompleto(e), 'Seleccione empleado');
+            fillSelect(prodSelect, [], 'idProducto', 'nombreProducto', 'Primero seleccione una venta');
+            if (fallos.length) showNotice(form, 'No se pudieron cargar: ' + fallos.join('; '));
         }
 
+        function ventaActual() {
+            return ventasList.find(x => x.idVenta === Number(ventaSelect.value));
+        }
+
+        // Al elegir la venta, el selector de producto muestra solo los productos de esa venta.
         ventaSelect?.addEventListener('change', () => {
-            const idVenta = Number(ventaSelect.value);
-            const v = ventasList.find(x => x.idVenta === idVenta);
-            if (v && Array.isArray(v.detalles) && v.detalles.length) {
-                const primerDetalle = v.detalles[0];
-                if (primerDetalle.idProducto && prodSelect) {
-                    prodSelect.value = primerDetalle.idProducto;
-                }
-                if (precioInput) {
-                    precioInput.value = primerDetalle.precioUnitarioHistorico || primerDetalle.precioUnitario || 0;
-                }
+            const v = ventaActual();
+            const detalles = Array.isArray(v?.detalles) ? v.detalles : [];
+            fillSelect(prodSelect, detalles, 'idProducto',
+                d => `${d.nombreProducto || 'Producto #' + d.idProducto} (vendidos: ${d.cantidad})`,
+                detalles.length ? 'Seleccione producto' : 'La venta no tiene productos');
+            if (detalles.length === 1) {
+                prodSelect.value = detalles[0].idProducto;
+            }
+            prodSelect.dispatchEvent(new Event('change'));
+        });
+
+        prodSelect?.addEventListener('change', () => {
+            const v = ventaActual();
+            const d = v?.detalles?.find(x => x.idProducto === Number(prodSelect.value));
+            if (d) {
+                if (precioInput) precioInput.value = d.precioUnitarioHistorico ?? 0;
                 if (cantInput) {
-                    cantInput.value = primerDetalle.cantidad || 1;
+                    cantInput.max = d.cantidad;
+                    cantInput.value = 1;
+                }
+            } else {
+                if (precioInput) precioInput.value = '';
+                if (cantInput) {
+                    cantInput.removeAttribute('max');
+                    cantInput.value = 1;
                 }
             }
         });
@@ -693,35 +797,43 @@
                 const devs = await apiFetch('/api/Devoluciones') || [];
                 tbody.innerHTML = devs.map(d => `
                     <tr>
-                        <td>#${d.idDevolucion || '-'}</td>
-                        <td>Venta #${d.idVenta || '-'}</td>
-                        <td>${d.fechaDevolucion ? new Date(d.fechaDevolucion).toLocaleDateString() : 'Reciente'}</td>
-                        <td>${d.motivo || '-'}</td>
-                        <td>$${Number(d.importeReintegrado || d.montoReembolso || 0).toLocaleString()}</td>
+                        <td>#${d.idDevolucion ?? '-'}</td>
+                        <td>Venta #${d.idVenta ?? '-'}</td>
+                        <td>${formatFecha(d.fechaDevolucion)}</td>
+                        <td>${esc(d.motivo || '-')}</td>
+                        <td>${money(d.importeReintegrado)}</td>
                     </tr>
                 `).join('') || '<tr><td colspan="5" class="text-center text-secondary py-3">Sin devoluciones registradas</td></tr>';
             } catch (e) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-secondary py-3">Sin devoluciones registradas</td></tr>';
+                console.warn('Error cargando devoluciones', e);
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-3">No se pudieron cargar las devoluciones: ${esc(e.message)}</td></tr>`;
             }
         }
 
         form?.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const idProd = Number(prodSelect?.value || 1);
+            if (!ventaSelect?.value || !prodSelect?.value || !empSelect?.value) {
+                alert('Seleccione venta, producto y empleado');
+                return;
+            }
+
             const cant = Math.max(1, parseInt(cantInput?.value || 1, 10));
+            const max = Number(cantInput?.max || 0);
+            if (max && cant > max) {
+                alert(`La cantidad a devolver no puede superar lo vendido (${max})`);
+                return;
+            }
             const precio = Math.max(0, parseFloat(precioInput?.value || 0));
+            if (!(precio > 0)) {
+                alert('El precio unitario debe ser mayor a 0');
+                return;
+            }
 
             const payload = {
-                idVenta: Number(ventaSelect?.value || 1),
-                idEmpleado: 1,
+                idVenta: Number(ventaSelect.value),
+                idEmpleado: Number(empSelect.value),
                 motivo: document.getElementById('devolucionMotivo')?.value.trim() || 'Devolución de producto',
-                detalles: [
-                    {
-                        idProducto: idProd,
-                        cantidad: cant,
-                        precioUnitario: precio
-                    }
-                ]
+                detalles: [{ idProducto: Number(prodSelect.value), cantidad: cant, precioUnitario: precio }]
             };
 
             try {
@@ -729,13 +841,16 @@
                 alert('Devolución registrada con éxito');
             } catch (err) {
                 console.warn('Error saving devolucion', err);
-                alert('Devolución registrada en el sistema');
+                alert('No se pudo registrar la devolución: ' + err.message);
+                return;
             }
 
             form.reset();
+            fillSelect(prodSelect, [], 'idProducto', 'nombreProducto', 'Primero seleccione una venta');
             await loadDevoluciones();
         });
 
+        await loadSelects();
         await loadDevoluciones();
     }
 

@@ -7,6 +7,20 @@ function getAuthHeader() {
 
 let currentUsers = [];
 let editingUserId = null;
+let refreshUsersView = () => renderUsers(currentUsers);
+
+function escHtml(v) {
+    return String(v ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+async function readError(res, fallback) {
+    try {
+        const j = await res.json();
+        return j.error || j.message || j.title || fallback;
+    } catch (e) {
+        return fallback;
+    }
+}
 
 const auditSeed = [
     { fecha: '2026-11-10 09:42', usuario: 'mlopez', accion: 'Aprobó renovación', modulo: 'Miembros', resultado: 'OK' },
@@ -44,8 +58,8 @@ function renderUsers(rows) {
                         <i class="bi bi-person"></i>
                     </div>
                     <div>
-                        <div class="fw-semibold">${user.nombre || user.alias}</div>
-                        <small class="text-secondary">${user.email || (user.alias + '@fitlife.com')}</small>
+                        <div class="fw-semibold">${escHtml(user.nombre || user.alias)}</div>
+                        <small class="text-secondary">${escHtml(user.email || (user.alias + '@fitlife.com'))}</small>
                     </div>
                 </div>
             </td>
@@ -55,7 +69,9 @@ function renderUsers(rows) {
             <td><span class="badge text-bg-${user.estado === 'Inactivo' ? 'secondary' : 'success'}">${user.estado || 'Activo'}</span></td>
             <td>
                 <button class="btn btn-sm btn-outline-primary me-2" data-action="edit" data-id="${user.id}">Editar</button>
-                <button class="btn btn-sm btn-outline-danger" data-action="delete" data-id="${user.id}">Inactivar</button>
+                ${user.estado === 'Inactivo'
+                    ? `<button class="btn btn-sm btn-outline-success" data-action="activate" data-id="${user.id}">Reactivar</button>`
+                    : `<button class="btn btn-sm btn-outline-danger" data-action="deactivate" data-id="${user.id}">Inactivar</button>`}
             </td>
         </tr>
     `).join('') || '<tr><td colspan="6" class="text-center text-secondary py-4">Sin usuarios registrados</td></tr>';
@@ -68,12 +84,21 @@ function renderUsers(rows) {
         });
     });
 
-    tbody.querySelectorAll('[data-action="delete"]').forEach(btn => {
+    tbody.querySelectorAll('[data-action="deactivate"]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            // El id sale del boton presionado: se inactiva exactamente ese usuario.
+            const id = Number(btn.getAttribute('data-id'));
+            const user = currentUsers.find(u => u.id === id);
+            if (confirm(`¿Desea inactivar al usuario "${user?.alias || user?.nombre || id}"? No podrá iniciar sesión hasta que se lo reactive.`)) {
+                await setUserActive(id, false);
+            }
+        });
+    });
+
+    tbody.querySelectorAll('[data-action="activate"]').forEach(btn => {
         btn.addEventListener('click', async () => {
             const id = Number(btn.getAttribute('data-id'));
-            if (confirm('¿Está seguro de que desea inactivar/eliminar este usuario?')) {
-                await deleteUser(id);
-            }
+            await setUserActive(id, true);
         });
     });
 }
@@ -103,34 +128,37 @@ async function fetchUsers() {
             currentUsers = await res.json();
             return currentUsers;
         }
+        throw new Error(await readError(res, `Error ${res.status}`));
     } catch (e) {
-        console.warn('Error fetching /api/Usuarios, using fallback', e);
+        console.warn('Error fetching /api/Usuarios', e);
+        currentUsers = [];
+        const tbody = document.getElementById('usuariosTableBody');
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">No se pudieron cargar los usuarios: ${escHtml(e.message)}</td></tr>`;
+        }
+        return currentUsers;
     }
-    currentUsers = [
-        { id: 1, nombre: 'María López', alias: 'mlopez', email: 'mlopez@fitlife.com', rol: 'Gerente General', sede: 'Casa Central', estado: 'Activo', ultimoAcceso: '2026-11-10 09:42' },
-        { id: 2, nombre: 'Luis Pérez', alias: 'lperez', email: 'lperez@fitlife.com', rol: 'Gerente Miembros', sede: 'Belgrano', estado: 'Activo', ultimoAcceso: '2026-11-10 08:55' },
-        { id: 3, nombre: 'Sofía Costa', alias: 'scosta', email: 'scosta@fitlife.com', rol: 'Gerente Ventas', sede: 'San Isidro', estado: 'Activo', ultimoAcceso: '2026-11-10 09:10' },
-        { id: 4, nombre: 'Diego Romero', alias: 'dromero', email: 'dromero@fitlife.com', rol: 'Técnico', sede: 'Casa Central', estado: 'Activo', ultimoAcceso: '2026-11-10 07:30' },
-        { id: 5, nombre: 'Ana Morales', alias: 'amorales', email: 'amorales@fitlife.com', rol: 'Vendedor', sede: 'Belgrano', estado: 'Inactivo', ultimoAcceso: '2026-11-08 18:15' }
-    ];
-    return currentUsers;
 }
 
-async function deleteUser(id) {
+// Inactiva / reactiva (NO elimina) exactamente al usuario indicado por id.
+async function setUserActive(id, activo) {
     try {
-        const res = await fetch(`/api/Usuarios/${id}`, {
-            method: 'DELETE',
+        const res = await fetch(`/api/Usuarios/${id}/${activo ? 'activar' : 'inactivar'}`, {
+            method: 'PUT',
             headers: getAuthHeader()
         });
-        if (res.ok) {
-            alert('Usuario inactivado/eliminado con éxito');
+        if (!res.ok) {
+            throw new Error(await readError(res, `Error ${res.status}`));
         }
+        const updated = await res.json();
+        const idx = currentUsers.findIndex(u => u.id === id);
+        if (idx >= 0) currentUsers[idx] = { ...currentUsers[idx], ...updated };
+        alert(activo ? 'Usuario reactivado con éxito' : 'Usuario inactivado con éxito');
     } catch (e) {
-        console.warn('Error deleting user', e);
+        console.warn('Error cambiando estado del usuario', e);
+        alert('No se pudo cambiar el estado del usuario: ' + e.message);
     }
-    // Update local state and re-render
-    currentUsers = currentUsers.filter(u => u.id !== id);
-    renderUsers(currentUsers);
+    refreshUsersView();
 }
 
 function initUsuarios() {
@@ -169,6 +197,8 @@ function initUsuarios() {
         renderUsers(filtered);
     }
 
+    refreshUsersView = applyFilters;
+
     search?.addEventListener('input', applyFilters);
     filterRol?.addEventListener('change', applyFilters);
     filterEstado?.addEventListener('change', applyFilters);
@@ -192,41 +222,29 @@ function initUsuarios() {
 
         try {
             if (editingUserId) {
-                // Update
                 const res = await fetch(`/api/Usuarios/${editingUserId}`, {
                     method: 'PUT',
                     headers: getAuthHeader(),
                     body: JSON.stringify(payload)
                 });
-                if (res.ok) {
-                    const updated = await res.json();
-                    const idx = currentUsers.findIndex(u => u.id === editingUserId);
-                    if (idx >= 0) currentUsers[idx] = updated;
-                } else {
-                    const err = await res.json();
-                    alert(err.error || 'Error al actualizar usuario');
-                }
+                if (!res.ok) throw new Error(await readError(res, 'Error al actualizar usuario'));
+                const updated = await res.json();
+                const idx = currentUsers.findIndex(u => u.id === editingUserId);
+                if (idx >= 0) currentUsers[idx] = updated;
             } else {
-                // Create
                 const res = await fetch('/api/Usuarios', {
                     method: 'POST',
                     headers: getAuthHeader(),
                     body: JSON.stringify(payload)
                 });
-                if (res.ok) {
-                    const created = await res.json();
-                    currentUsers.unshift(created);
-                } else {
-                    const err = await res.json();
-                    alert(err.error || 'Error al crear usuario');
-                }
+                if (!res.ok) throw new Error(await readError(res, 'Error al crear usuario'));
+                const created = await res.json();
+                currentUsers.push(created);
             }
         } catch (e) {
             console.error('Error saving user', e);
-            if (!editingUserId) {
-                payload.id = Date.now();
-                currentUsers.unshift(payload);
-            }
+            alert('No se pudo guardar el usuario: ' + e.message);
+            return;
         }
 
         editingUserId = null;

@@ -18,7 +18,7 @@ namespace FITLIFENETWORKPROYECTO.Repository
         public async Task<Usuario?> ValidateUserAsync(string nombre, string contrasena)
         {
             return await _db.Usuarios
-                .FirstOrDefaultAsync(x => x.Nombre == nombre && x.Contrasena == contrasena);
+                .FirstOrDefaultAsync(x => x.Nombre == nombre && x.Contrasena == contrasena && x.Activo);
         }
 
         public async Task<List<string>> GetUserRolesAsync(int usuarioId)

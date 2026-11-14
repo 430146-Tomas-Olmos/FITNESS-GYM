@@ -22,9 +22,9 @@
                 </div>
                 <nav class="nav nav-pills flex-column gap-2">
                     <a href="../../dashboard.html" class="btn btn-dark text-start px-3 py-2 rounded-3 text-white-50"><i class="bi bi-house-door me-2"></i>Dashboard</a>
-                    <a href="../../equipamiento.html" class="btn btn-primary text-start px-3 py-2 rounded-3"><i class="bi bi-tools me-2"></i>Equipamiento</a>
+                    <a href="../../equipamiento.html" class="btn btn-dark text-start px-3 py-2 rounded-3 text-white-50"><i class="bi bi-tools me-2"></i>Equipamiento</a>
                     <a href="equipos.html" class="btn btn-dark text-start px-3 py-2 rounded-3 text-white-50"><i class="bi bi-bicycle me-2"></i>Equipos</a>
-                    <a href="incidencias.html" class="btn btn-dark text-start px-3 py-2 rounded-3 text-white-50"><i class="bi bi-exclamation-triangle me-2"></i>Incidencias</a>
+                    <a href="incidencias.html" class="btn btn-primary text-start px-3 py-2 rounded-3"><i class="bi bi-exclamation-triangle me-2"></i>Incidencias</a>
                     <a href="mantenimientos.html" class="btn btn-dark text-start px-3 py-2 rounded-3 text-white-50"><i class="bi bi-tools me-2"></i>Mantenimientos</a>
                     <a href="proveedores.html" class="btn btn-dark text-start px-3 py-2 rounded-3 text-white-50"><i class="bi bi-truck me-2"></i>Proveedores</a>
                 </nav>
@@ -48,10 +48,12 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>ID</th>
-                                        <th>Descripción</th>
                                         <th>Sede</th>
-                                        <th>Estado</th>
+                                        <th>Equipo</th>
+                                        <th>Descripción</th>
                                         <th>Fecha</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody id="incidenciasTableBody"></tbody>
@@ -72,6 +74,10 @@
                 </div>
                 <div class="modal-body">
                     <form id="incidenciaForm" class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">Socio</label>
+                            <select id="incidenciaIdSocio" class="form-select" required></select>
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Sede</label>
                             <select id="incidenciaIdSede" class="form-select" required></select>

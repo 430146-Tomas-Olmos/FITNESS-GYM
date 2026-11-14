@@ -194,6 +194,38 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.CajasController",
+    "Method": "CerrarCaja",
+    "RelativePath": "api/Cajas/{id}/cerrar",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.CajasController",
+    "Method": "ToggleEstado",
+    "RelativePath": "api/Cajas/{id}/toggle-estado",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.CategoriasProductosController",
     "Method": "GetAll",
     "RelativePath": "api/CategoriasProductos",
@@ -2220,6 +2252,38 @@
     "Method": "Delete",
     "RelativePath": "api/Usuarios/{id}",
     "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.UsuariosController",
+    "Method": "Activar",
+    "RelativePath": "api/Usuarios/{id}/activar",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FITLIFENETWORKPROYECTO.Controllers.UsuariosController",
+    "Method": "Inactivar",
+    "RelativePath": "api/Usuarios/{id}/inactivar",
+    "HttpMethod": "PUT",
     "IsController": true,
     "Order": 0,
     "Parameters": [

@@ -10,7 +10,7 @@ namespace FITLIFENETWORKPROYECTO.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "ROLE_GERENTE_GENERAL,ROLE_GERENTE_VENTAS,ROLE_GERENTE_EQUIPAMIENTO")]
+[Authorize(Roles = "ROLE_GERENTE_GENERAL,ROLE_GERENTE_VENTAS,ROLE_GERENTE_EQUIPAMIENTO,ROLE_TECNICO")]
 public class ProveedoresController : ControllerBase
 {
     private readonly IServices _services;
@@ -76,16 +76,31 @@ public class ProveedoresController : ControllerBase
     {
         try
         {
-            var p = await _db.Proveedores.FindAsync(id);
-            if (p == null) return NotFound();
+            var p = await _db.Proveedores.FirstOrDefaultAsync(x => x.IdProveedor == id);
+            if (p == null) return NotFound(new { error = "El proveedor no existe." });
+
+            var tieneCompras = await _db.ComprasStocks.AnyAsync(c => c.IdProveedor == id);
+
+            if (tieneCompras)
+            {
+                // Tiene historial de compras: se conserva el historico y se da de baja (no aparece mas en los listados).
+                p.Activo = false;
+                await _db.SaveChangesAsync();
+                return Ok(new { message = "El proveedor tiene compras registradas, por lo que se dio de baja y ya no aparecera en los listados (se conserva el historial de compras).", baja = true });
+            }
+
+            // Sin compras: los mantenimientos quedan sin proveedor (columna opcional) y se elimina fisicamente.
+            await _db.MantenimientoEquipamientos
+                .Where(m => m.IdProveedor == id)
+                .ExecuteUpdateAsync(s => s.SetProperty(m => m.IdProveedor, (int?)null));
 
             _db.Proveedores.Remove(p);
             await _db.SaveChangesAsync();
-            return Ok(new { message = "Proveedor eliminado" });
+            return Ok(new { message = "Proveedor eliminado", baja = false });
         }
         catch (Exception ex)
         {
-            return BadRequest(ex.Message);
+            return BadRequest(new { error = ex.Message });
         }
     }
 }

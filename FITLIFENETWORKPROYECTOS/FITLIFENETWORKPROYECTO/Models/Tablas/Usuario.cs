@@ -11,5 +11,7 @@ public partial class Usuario
 
     public string Contrasena { get; set; } = null!;
 
+    public bool Activo { get; set; } = true;
+
     public virtual ICollection<RolesSistema> Idrols { get; set; } = new List<RolesSistema>();
 }

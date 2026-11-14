@@ -7,9 +7,12 @@ namespace FITLIFENETWORKPROYECTO.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "ROLE_GERENTE_GENERAL,ROLE_GERENTE_MIEMBROS")]
+[Authorize]
 public class SociosController : ControllerBase
 {
+    private const string RolesGestion = "ROLE_GERENTE_GENERAL,ROLE_GERENTE_MIEMBROS";
+    private const string RolesLectura = "ROLE_GERENTE_GENERAL,ROLE_GERENTE_MIEMBROS,ROLE_GERENTE_VENTAS,ROLE_VENDEDOR,ROLE_GERENTE_EQUIPAMIENTO,ROLE_TECNICO";
+
     private readonly IServices _services;
 
     public SociosController(IServices services)
@@ -18,6 +21,7 @@ public class SociosController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = RolesLectura)]
     public async Task<IActionResult> GetAll()
     {
         try
@@ -32,6 +36,7 @@ public class SociosController : ControllerBase
     }
 
     [HttpGet("{idSocio:int}")]
+    [Authorize(Roles = RolesGestion)]
     public async Task<IActionResult> GetById(int idSocio)
     {
         try
@@ -51,6 +56,7 @@ public class SociosController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = RolesGestion)]
     public async Task<IActionResult> Create([FromBody] SocioCreateDto dto)
     {
         try
@@ -65,6 +71,7 @@ public class SociosController : ControllerBase
     }
 
     [HttpPost("alta-con-contrato")]
+    [Authorize(Roles = RolesGestion)]
     public async Task<IActionResult> CreateSocioConContrato([FromBody] SocioConContratoCreateDto dto)
     {
         try
@@ -79,6 +86,7 @@ public class SociosController : ControllerBase
     }
 
     [HttpPut("{idSocio:int}")]
+    [Authorize(Roles = RolesGestion)]
     public async Task<IActionResult> Update(int idSocio, [FromBody] SocioCreateDto dto)
     {
         try
@@ -98,6 +106,7 @@ public class SociosController : ControllerBase
     }
 
     [HttpDelete("{idSocio:int}")]
+    [Authorize(Roles = RolesGestion)]
     public async Task<IActionResult> Delete(int idSocio)
     {
         try

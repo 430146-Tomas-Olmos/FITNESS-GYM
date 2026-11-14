@@ -7,7 +7,7 @@ namespace FITLIFENETWORKPROYECTO.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize(Roles = "ROLE_GERENTE_GENERAL,ROLE_GERENTE_VENTAS,ROLE_GERENTE_EQUIPAMIENTO")]
+[Authorize]
 public class EmpleadosController : ControllerBase
 {
     private readonly IServices _services;
@@ -18,6 +18,7 @@ public class EmpleadosController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = "ROLE_GERENTE_GENERAL,ROLE_GERENTE_VENTAS,ROLE_GERENTE_EQUIPAMIENTO,ROLE_VENDEDOR,ROLE_TECNICO")]
     public async Task<IActionResult> GetEmpleados([FromQuery] int? idSede = null, [FromQuery] int? idRol = null)
     {
         try
@@ -31,6 +32,7 @@ public class EmpleadosController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "ROLE_GERENTE_GENERAL,ROLE_GERENTE_VENTAS,ROLE_GERENTE_EQUIPAMIENTO")]
     public async Task<IActionResult> CreateEmpleado([FromBody] EmpleadoCreateDto dto)
     {
         try
