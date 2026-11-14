@@ -158,16 +158,26 @@ namespace FITLIFENETWORKPROYECTO.Services
         public async Task<List<SocioDto>> GetSociosAsync()
         {
             var socios = await repo.GetSociosAsync();
-            return socios.Select(s => new SocioDto
+            return socios.Select(s =>
             {
-                IdSocio = s.IdSocio,
-                Dni = s.IdPersonaNavigation?.Dni ?? string.Empty,
-                Nombre = s.IdPersonaNavigation?.Nombre ?? string.Empty,
-                Apellido = s.IdPersonaNavigation?.Apellido ?? string.Empty,
-                Email = s.IdPersonaNavigation?.Email,
-                Telefono = s.IdPersonaNavigation?.Telefono,
-                EstadoCuenta = s.EstadoCuenta,
-                FechaIngresoAlta = s.FechaIngresoAlta
+                var contratoActivo = s.ContratosMembresia
+                    .OrderByDescending(c => c.FechaVencimiento)
+                    .FirstOrDefault(c => c.EstadoContrato == "ACTIVO" || c.FechaVencimiento >= DateOnly.FromDateTime(DateTime.Today));
+
+                return new SocioDto
+                {
+                    IdSocio = s.IdSocio,
+                    Dni = s.IdPersonaNavigation?.Dni ?? string.Empty,
+                    Nombre = s.IdPersonaNavigation?.Nombre ?? string.Empty,
+                    Apellido = s.IdPersonaNavigation?.Apellido ?? string.Empty,
+                    Email = s.IdPersonaNavigation?.Email,
+                    Telefono = s.IdPersonaNavigation?.Telefono,
+                    EstadoCuenta = s.EstadoCuenta,
+                    FechaIngresoAlta = s.FechaIngresoAlta,
+                    IdSede = contratoActivo?.IdSede,
+                    NombreSede = contratoActivo?.IdSedeNavigation?.NombreSede,
+                    Plan = contratoActivo?.IdPlanNavigation?.NombrePlan
+                };
             }).ToList();
         }
 
@@ -1089,6 +1099,24 @@ namespace FITLIFENETWORKPROYECTO.Services
             return await repo.ValidarAccesoAsync(idSocio, idSede, fechaHora);
         }
 
+        public async Task<List<AccesoLogDto>> GetAccesosLogsAsync(int? idSede = null)
+        {
+            var logs = await repo.GetAccesosLogsAsync(idSede);
+            return logs.Select(a => new AccesoLogDto
+            {
+                IdAcceso = a.IdAcceso,
+                IdSocio = a.IdSocio,
+                IdSede = a.IdSede,
+                NombreSede = a.IdSedeNavigation?.NombreSede ?? string.Empty,
+                FechaHoraMarcado = a.FechaHoraMarcado,
+                AccesoPermitido = a.AccesoPermitido,
+                MotivoRechazo = a.MotivoRechazo,
+                SocioNombre = a.IdSocioNavigation?.IdPersonaNavigation != null
+                    ? $"{a.IdSocioNavigation.IdPersonaNavigation.Nombre} {a.IdSocioNavigation.IdPersonaNavigation.Apellido}".Trim()
+                    : $"Socio {a.IdSocio}"
+            }).ToList();
+        }
+
         public async Task<HistorialSocioDto> GetHistorialSocioAsync(int idSocio)
         {
             if (idSocio <= 0)
@@ -1147,7 +1175,11 @@ namespace FITLIFENETWORKPROYECTO.Services
             {
                 IdClase = c.IdClase,
                 IdDisciplina = c.IdDisciplina,
+                NombreDisciplina = c.IdDisciplinaNavigation?.NombreDisciplina,
                 IdInstructor = c.IdInstructor,
+                NombreInstructor = c.IdInstructorNavigation?.IdPersonaNavigation != null
+                    ? $"{c.IdInstructorNavigation.IdPersonaNavigation.Apellido}, {c.IdInstructorNavigation.IdPersonaNavigation.Nombre}"
+                    : null,
                 IdSalon = c.IdSalon,
                 FechaClase = c.FechaClase,
                 HoraInicio = c.HoraInicio,
@@ -1320,6 +1352,11 @@ namespace FITLIFENETWORKPROYECTO.Services
                 throw new ArgumentException("El precio debe ser mayor a cero.");
             }
 
+            if (dto.StockMinimo < 0)
+            {
+                throw new ArgumentException("El stock mínimo no puede ser negativo.");
+            }
+
             var productoCreado = await repo.CreateProductoAsync(new Models.Tablas.Producto
             {
                 IdCategoria = dto.IdCategoria,
@@ -1417,6 +1454,11 @@ namespace FITLIFENETWORKPROYECTO.Services
                 throw new ArgumentException("Debe enviar al menos un producto para registrar la venta.");
             }
 
+            if (dto.Items.Any(i => i.Cantidad <= 0 || i.PrecioUnitarioHistorico < 0))
+            {
+                throw new ArgumentException("Las cantidades y precios de venta no pueden ser negativos o cero.");
+            }
+
             var venta = new Models.Tablas.Venta
             {
                 IdSocio = dto.IdSocio,
@@ -1457,6 +1499,29 @@ namespace FITLIFENETWORKPROYECTO.Services
             };
         }
 
+        public async Task<List<VentaDto>> GetVentasAsync(int? idSede = null, int? idSocio = null)
+        {
+            var ventas = await repo.GetVentasAsync(idSede, idSocio);
+            return ventas.Select(v => new VentaDto
+            {
+                IdVenta = v.IdVenta,
+                IdSocio = v.IdSocio,
+                IdSede = v.IdSede,
+                IdVendedor = v.IdVendedor,
+                IdFormaPago = v.IdFormaPago,
+                FechaHoraVenta = v.FechaHoraVenta,
+                ImputadoACuenta = v.ImputadoACuenta,
+                TotalVenta = v.DetalleVenta.Sum(d => d.Cantidad * d.PrecioUnitarioHistorico),
+                Detalles = v.DetalleVenta.Select(d => new VentaDetalleDto
+                {
+                    IdProducto = d.IdProducto,
+                    NombreProducto = d.IdProductoNavigation?.NombreProducto ?? string.Empty,
+                    Cantidad = d.Cantidad,
+                    PrecioUnitarioHistorico = d.PrecioUnitarioHistorico
+                }).ToList()
+            }).ToList();
+        }
+
         public async Task<List<EquipoDto>> GetEquiposAsync(int? idSede = null)
         {
             var equipos = await repo.GetEquiposAsync(idSede);
@@ -1470,6 +1535,61 @@ namespace FITLIFENETWORKPROYECTO.Services
                 FechaAdquisicion = e.FechaAdquisicion,
                 EstadoOperativo = e.EstadoOperativo
             }).ToList();
+        }
+
+        public async Task<EquipoDto> CreateEquipoAsync(EquipoCreateDto dto)
+        {
+            var equipo = new Models.Tablas.Equipamiento
+            {
+                IdSede = dto.IdSede,
+                NombreMaquina = dto.NombreMaquina.Trim(),
+                NumeroSerie = dto.NumeroSerie.Trim(),
+                FechaAdquisicion = DateOnly.FromDateTime(dto.FechaAdquisicion),
+                EstadoOperativo = string.IsNullOrWhiteSpace(dto.EstadoOperativo) ? "ACTIVO" : dto.EstadoOperativo.Trim().ToUpper()
+            };
+
+            var creado = await repo.CreateEquipoAsync(equipo);
+            return new EquipoDto
+            {
+                IdEquipo = creado.IdEquipo,
+                IdSede = creado.IdSede,
+                NombreSede = creado.IdSedeNavigation?.NombreSede ?? string.Empty,
+                NombreMaquina = creado.NombreMaquina,
+                NumeroSerie = creado.NumeroSerie,
+                FechaAdquisicion = creado.FechaAdquisicion,
+                EstadoOperativo = creado.EstadoOperativo
+            };
+        }
+
+        public async Task<EquipoDto?> UpdateEquipoAsync(int idEquipo, EquipoCreateDto dto)
+        {
+            var equipo = new Models.Tablas.Equipamiento
+            {
+                IdSede = dto.IdSede,
+                NombreMaquina = dto.NombreMaquina.Trim(),
+                NumeroSerie = dto.NumeroSerie.Trim(),
+                FechaAdquisicion = DateOnly.FromDateTime(dto.FechaAdquisicion),
+                EstadoOperativo = dto.EstadoOperativo
+            };
+
+            var actualizado = await repo.UpdateEquipoAsync(idEquipo, equipo);
+            if (actualizado == null) return null;
+
+            return new EquipoDto
+            {
+                IdEquipo = actualizado.IdEquipo,
+                IdSede = actualizado.IdSede,
+                NombreSede = actualizado.IdSedeNavigation?.NombreSede ?? string.Empty,
+                NombreMaquina = actualizado.NombreMaquina,
+                NumeroSerie = actualizado.NumeroSerie,
+                FechaAdquisicion = actualizado.FechaAdquisicion,
+                EstadoOperativo = actualizado.EstadoOperativo
+            };
+        }
+
+        public async Task<bool> DeleteEquipoAsync(int idEquipo)
+        {
+            return await repo.DeleteEquipoAsync(idEquipo);
         }
 
         public async Task<List<IncidenciaDto>> GetIncidenciasAsync(int? idSede = null)
@@ -1903,6 +2023,11 @@ namespace FITLIFENETWORKPROYECTO.Services
                 throw new ArgumentException("La compra debe incluir al menos un detalle.");
             }
 
+            if (dto.Detalles.Any(d => d.Cantidad <= 0 || d.PrecioCostoUnitario < 0))
+            {
+                throw new ArgumentException("Las cantidades y precios de costo no pueden ser negativos o cero.");
+            }
+
             var creada = await repo.CreateCompraAsync(new Models.Tablas.ComprasStock
             {
                 IdProveedor = dto.IdProveedor,
@@ -1960,6 +2085,11 @@ namespace FITLIFENETWORKPROYECTO.Services
             if (dto == null)
             {
                 throw new ArgumentNullException(nameof(dto));
+            }
+
+            if (dto.SaldoInicial < 0)
+            {
+                throw new ArgumentException("El saldo inicial no puede ser negativo.");
             }
 
             var creada = await repo.CreateCajaAsync(new Models.Tablas.Caja

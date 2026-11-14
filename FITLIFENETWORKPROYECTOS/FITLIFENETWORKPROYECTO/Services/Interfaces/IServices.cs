@@ -112,6 +112,8 @@ namespace FITLIFENETWORKPROYECTO.Services.Interfaces
 
         public Task<AccesoValidacionResponseDto> ValidarAccesoAsync(int idSocio, int idSede, DateTime fechaHora);
 
+        public Task<List<AccesoLogDto>> GetAccesosLogsAsync(int? idSede = null);
+
         public Task<HistorialSocioDto> GetHistorialSocioAsync(int idSocio);
 
         public Task<List<ReservaDto>> GetReservasEnListaEsperaAsync(int idClase);
@@ -144,7 +146,15 @@ namespace FITLIFENETWORKPROYECTO.Services.Interfaces
 
         public Task<VentaDto> RegistrarVentaAsync(VentaCreateDto dto);
 
+        public Task<List<VentaDto>> GetVentasAsync(int? idSede = null, int? idSocio = null);
+
         public Task<List<EquipoDto>> GetEquiposAsync(int? idSede = null);
+
+        public Task<EquipoDto> CreateEquipoAsync(EquipoCreateDto dto);
+
+        public Task<EquipoDto?> UpdateEquipoAsync(int idEquipo, EquipoCreateDto dto);
+
+        public Task<bool> DeleteEquipoAsync(int idEquipo);
 
         public Task<List<IncidenciaDto>> GetIncidenciasAsync(int? idSede = null);
 

@@ -34,6 +34,17 @@ builder.Services.AddScoped<IRepository, RepositoryFitLife>();
 builder.Services.AddScoped<IServices, ServicesFIT>();
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllDev", policy =>
+    {
+        policy.SetIsOriginAllowed(_ => true)
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
 // Configurar JWT
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var key = Encoding.UTF8.GetBytes(jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key no configurada"));
@@ -61,6 +72,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+app.UseCors("AllowAllDev");
 
 if (!app.Environment.IsDevelopment())
 {

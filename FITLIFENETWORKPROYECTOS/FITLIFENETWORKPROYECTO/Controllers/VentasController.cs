@@ -17,6 +17,19 @@ public class VentasController : ControllerBase
         _services = services;
     }
 
+    [HttpGet]
+    public async Task<IActionResult> GetAll([FromQuery] int? idSede = null, [FromQuery] int? idSocio = null)
+    {
+        try
+        {
+            return Ok(await _services.GetVentasAsync(idSede, idSocio));
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> Registrar([FromBody] VentaCreateDto dto)
     {

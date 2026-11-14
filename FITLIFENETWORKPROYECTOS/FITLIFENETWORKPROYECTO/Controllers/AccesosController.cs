@@ -18,6 +18,20 @@ public class AccesosController : ControllerBase
         _services = services;
     }
 
+    [HttpGet("log")]
+    public async Task<IActionResult> GetLogs([FromQuery] int? idSede = null)
+    {
+        try
+        {
+            var logs = await _services.GetAccesosLogsAsync(idSede);
+            return Ok(logs);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
     [HttpPost("validar")]
     public async Task<IActionResult> ValidarAcceso([FromBody] AccesoValidacionRequestDto dto)
     {

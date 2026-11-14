@@ -197,6 +197,20 @@ function applyModuleSidebar() {
             }
         });
     });
+
+    // Dynamically highlight active page in sidebar
+    const currentPage = window.location.pathname.split('/').pop() || '';
+    document.querySelectorAll('aside nav a, #sidebarNav a, nav.nav-pills a').forEach((link) => {
+        const href = link.getAttribute('href') || '';
+        const linkPage = href.split('/').pop().split('?')[0];
+        if (linkPage && linkPage === currentPage) {
+            link.classList.remove('btn-dark', 'text-white-50');
+            link.classList.add('btn-primary', 'text-white');
+        } else if (linkPage && linkPage !== currentPage && !href.startsWith('#')) {
+            link.classList.remove('btn-primary');
+            link.classList.add('btn-dark', 'text-white-50');
+        }
+    });
 }
 
 function initDashboardPage() {

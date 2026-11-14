@@ -191,6 +191,7 @@ namespace FITLIFENETWORKPROYECTO.Repositories
                                     R.id_reserva AS IdReserva,
                                     P.nombre AS Nombre,
                                     P.apellido AS Apellido,
+                                    CONCAT(PI.apellido, ', ', PI.nombre) AS InstructorName,
                                     C.fecha_clase AS FechaClase,
                                     C.hora_inicio AS HoraInicio,
                                     D.nombre_disciplina AS NombreDisciplina,
@@ -200,6 +201,8 @@ namespace FITLIFENETWORKPROYECTO.Repositories
                                 INNER JOIN PERSONAS P ON S.id_persona = P.id_persona
                                 INNER JOIN CLASES C ON R.id_clase = C.id_clase
                                 INNER JOIN DISCIPLINAS D ON C.id_disciplina = D.id_disciplina
+                                INNER JOIN EMPLEADOS E ON C.id_instructor = E.id_empleado
+                                INNER JOIN PERSONAS PI ON E.id_persona = PI.id_persona
                                 WHERE D.nombre_disciplina IN ({disciplina1}, {disciplina2})
                                   AND C.fecha_clase >= {fechaDesde}
                                   AND C.fecha_clase < {fechaHasta}
@@ -307,6 +310,10 @@ namespace FITLIFENETWORKPROYECTO.Repositories
             return await db.Socios
                 .AsNoTracking()
                 .Include(s => s.IdPersonaNavigation)
+                .Include(s => s.ContratosMembresia)
+                    .ThenInclude(c => c.IdPlanNavigation)
+                .Include(s => s.ContratosMembresia)
+                    .ThenInclude(c => c.IdSedeNavigation)
                 .OrderBy(s => s.IdSocio)
                 .ToListAsync();
         }
@@ -1113,6 +1120,26 @@ namespace FITLIFENETWORKPROYECTO.Repositories
             };
         }
 
+        public async Task<List<Models.Tablas.AccesosLog>> GetAccesosLogsAsync(int? idSede = null)
+        {
+            var query = db.AccesosLogs
+                .AsNoTracking()
+                .Include(a => a.IdSedeNavigation)
+                .Include(a => a.IdSocioNavigation)
+                    .ThenInclude(s => s.IdPersonaNavigation)
+                .AsQueryable();
+
+            if (idSede.HasValue)
+            {
+                query = query.Where(a => a.IdSede == idSede.Value);
+            }
+
+            return await query
+                .OrderByDescending(a => a.FechaHoraMarcado)
+                .Take(100)
+                .ToListAsync();
+        }
+
         public async Task<HistorialSocioDto> GetHistorialSocioAsync(int idSocio)
         {
             var socio = await db.Socios
@@ -1296,6 +1323,9 @@ namespace FITLIFENETWORKPROYECTO.Repositories
         {
             return await db.Clases
                 .AsNoTracking()
+                .Include(c => c.IdDisciplinaNavigation)
+                .Include(c => c.IdInstructorNavigation)
+                    .ThenInclude(i => i.IdPersonaNavigation)
                 .OrderBy(c => c.FechaClase)
                 .ToListAsync();
         }
@@ -1630,6 +1660,30 @@ namespace FITLIFENETWORKPROYECTO.Repositories
             }
         }
 
+        public async Task<List<Models.Tablas.Venta>> GetVentasAsync(int? idSede = null, int? idSocio = null)
+        {
+            var query = db.Ventas
+                .AsNoTracking()
+                .Include(v => v.DetalleVenta)
+                    .ThenInclude(d => d.IdProductoNavigation)
+                .Include(v => v.IdSedeNavigation)
+                .Include(v => v.IdFormaPagoNavigation)
+                .Include(v => v.IdSocioNavigation)
+                    .ThenInclude(s => s.IdPersonaNavigation)
+                .AsQueryable();
+
+            if (idSede.HasValue)
+                query = query.Where(v => v.IdSede == idSede.Value);
+
+            if (idSocio.HasValue)
+                query = query.Where(v => v.IdSocio == idSocio.Value);
+
+            return await query
+                .OrderByDescending(v => v.FechaHoraVenta)
+                .Take(100)
+                .ToListAsync();
+        }
+
         public async Task<List<Models.Tablas.Equipamiento>> GetEquiposAsync(int? idSede = null)
         {
             var query = db.Equipamientos
@@ -1643,6 +1697,56 @@ namespace FITLIFENETWORKPROYECTO.Repositories
             }
 
             return await query.OrderBy(e => e.NombreMaquina).ToListAsync();
+        }
+
+        public async Task<Models.Tablas.Equipamiento> CreateEquipoAsync(Models.Tablas.Equipamiento equipo)
+        {
+            if (equipo.IdSede <= 0)
+                throw new ArgumentException("La sede es obligatoria.");
+
+            var sedeExiste = await db.Sedes.AnyAsync(s => s.IdSede == equipo.IdSede);
+            if (!sedeExiste)
+                throw new KeyNotFoundException("La sede indicada no existe.");
+
+            if (string.IsNullOrWhiteSpace(equipo.NombreMaquina))
+                throw new ArgumentException("El nombre del equipo es obligatorio.");
+
+            if (string.IsNullOrWhiteSpace(equipo.NumeroSerie))
+                throw new ArgumentException("El número de serie es obligatorio.");
+
+            equipo.EstadoOperativo = string.IsNullOrWhiteSpace(equipo.EstadoOperativo) ? "ACTIVO" : equipo.EstadoOperativo.Trim().ToUpper();
+
+            db.Equipamientos.Add(equipo);
+            await db.SaveChangesAsync();
+
+            await db.Entry(equipo).Reference(e => e.IdSedeNavigation).LoadAsync();
+            return equipo;
+        }
+
+        public async Task<Models.Tablas.Equipamiento?> UpdateEquipoAsync(int idEquipo, Models.Tablas.Equipamiento equipo)
+        {
+            var existente = await db.Equipamientos.FirstOrDefaultAsync(e => e.IdEquipo == idEquipo);
+            if (existente == null) return null;
+
+            if (equipo.IdSede > 0) existente.IdSede = equipo.IdSede;
+            if (!string.IsNullOrWhiteSpace(equipo.NombreMaquina)) existente.NombreMaquina = equipo.NombreMaquina.Trim();
+            if (!string.IsNullOrWhiteSpace(equipo.NumeroSerie)) existente.NumeroSerie = equipo.NumeroSerie.Trim();
+            if (equipo.FechaAdquisicion != default) existente.FechaAdquisicion = equipo.FechaAdquisicion;
+            if (!string.IsNullOrWhiteSpace(equipo.EstadoOperativo)) existente.EstadoOperativo = equipo.EstadoOperativo.Trim().ToUpper();
+
+            await db.SaveChangesAsync();
+            await db.Entry(existente).Reference(e => e.IdSedeNavigation).LoadAsync();
+            return existente;
+        }
+
+        public async Task<bool> DeleteEquipoAsync(int idEquipo)
+        {
+            var existente = await db.Equipamientos.FirstOrDefaultAsync(e => e.IdEquipo == idEquipo);
+            if (existente == null) return false;
+
+            existente.EstadoOperativo = "FUERA DE SERVICIO";
+            await db.SaveChangesAsync();
+            return true;
         }
 
         public async Task<List<Models.Tablas.IncidenciasReclamo>> GetIncidenciasAsync(int? idSede = null)

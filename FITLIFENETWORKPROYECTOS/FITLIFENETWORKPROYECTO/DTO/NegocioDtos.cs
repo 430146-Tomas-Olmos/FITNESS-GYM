@@ -43,6 +43,9 @@ namespace FITLIFENETWORKPROYECTO.DTO
         public string? Telefono { get; set; }
         public string EstadoCuenta { get; set; } = string.Empty;
         public DateOnly FechaIngresoAlta { get; set; }
+        public int? IdSede { get; set; }
+        public string? NombreSede { get; set; }
+        public string? Plan { get; set; }
     }
 
     public class SocioConContratoCreateDto
@@ -275,19 +278,6 @@ namespace FITLIFENETWORKPROYECTO.DTO
         public int IdFormaPago { get; set; }
     }
 
-    public class PagoCuotaCreateDto
-    {
-        [Required]
-        public int IdCobro { get; set; }
-
-        [Required]
-        public int IdFormaPago { get; set; }
-
-        [Range(0.01, double.MaxValue)]
-        public decimal Importe { get; set; }
-
-        public string? UsuarioSistema { get; set; }
-    }
 
     public class PagoCuotaResponseDto
     {
@@ -348,7 +338,9 @@ namespace FITLIFENETWORKPROYECTO.DTO
     {
         public int IdClase { get; set; }
         public int IdDisciplina { get; set; }
+        public string? NombreDisciplina { get; set; }
         public int IdInstructor { get; set; }
+        public string? NombreInstructor { get; set; }
         public int IdSalon { get; set; }
         public DateOnly FechaClase { get; set; }
         public TimeOnly HoraInicio { get; set; }
@@ -391,6 +383,7 @@ namespace FITLIFENETWORKPROYECTO.DTO
     {
         public int IdAcceso { get; set; }
         public int IdSocio { get; set; }
+        public string SocioNombre { get; set; } = string.Empty;
         public int IdSede { get; set; }
         public string NombreSede { get; set; } = string.Empty;
         public DateTime FechaHoraMarcado { get; set; }
@@ -526,6 +519,8 @@ namespace FITLIFENETWORKPROYECTO.DTO
         public DateOnly FechaAdquisicion { get; set; }
         public string EstadoOperativo { get; set; } = string.Empty;
     }
+
+
 
     public class IncidenciaCreateDto
     {

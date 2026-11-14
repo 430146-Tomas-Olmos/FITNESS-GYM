@@ -10,6 +10,7 @@
         public TimeSpan HoraInicio { get; set; }
         public string NombreDisciplina { get; set; }
         public string EstadoReserva { get; set; }
+    public string InstructorName { get; set; }
     }
 }
 

@@ -498,14 +498,15 @@ function formatDate(value) {
     let sociosDisponibles = [];
 
     function hasActiveMembershipForSede(socio, idSede, sedeNombre, contratos) {
+      if (!idSede) return true;
       const contratoActivo = contratos.find((contrato) => {
         const mismoSocio = Number(contrato.idSocio) === Number(socio.idSocio);
-        const mismoSede = Number(contrato.idSede) === idSede || contrato.nombreSede === sedeNombre;
+        const mismoSede = !contrato.idSede || Number(contrato.idSede) === idSede || contrato.nombreSede === sedeNombre;
         const estado = String(contrato.estadoContrato || '').toUpperCase();
         return mismoSocio && mismoSede && (estado === 'ACTIVO' || estado === 'VIGENTE' || estado === 'ALTA');
       });
 
-      return Boolean(contratoActivo || (Number(socio.idSede) === idSede && String(socio.estadoCuenta || '').toUpperCase() === 'ACTIVO'));
+      return Boolean(contratoActivo || !socio.idSede || Number(socio.idSede) === idSede || String(socio.estadoCuenta || '').toUpperCase() === 'ACTIVO');
     }
 
     async function populateSelectors() {
@@ -524,9 +525,11 @@ function formatDate(value) {
         const sedeNombre = (Array.isArray(sedes) ? sedes : []).find((sede) => Number(sede.idSede) === idSede)?.nombreSede;
         const activos = sociosDisponibles.filter((socio) => {
           const estado = String(socio.estadoCuenta || '').toUpperCase();
-          const mismoSede = Number(socio.idSede) === idSede || socio.nombreSede === sedeNombre;
+          if (estado && estado !== 'ACTIVO' && estado !== 'VIGENTE') return false;
+          if (!idSede) return true;
+          const mismoSede = !socio.idSede || Number(socio.idSede) === idSede || socio.nombreSede === sedeNombre;
           const membresiaVigente = hasActiveMembershipForSede(socio, idSede, sedeNombre, contratosDisponibles);
-          return mismoSede && membresiaVigente && (estado === 'ACTIVO' || estado === 'VIGENTE' || !estado);
+          return mismoSede || membresiaVigente;
         });
         fillSelect(selectorSocio, activos, 'idSocio', 'nombre', 'Seleccione socio', (socio) => getSocioLabel(socio));
         selectorSocio.disabled = activos.length === 0;
@@ -537,7 +540,9 @@ function formatDate(value) {
     }
 
     async function renderAccesos() {
-      const data = await apiFetch('/api/Accesos/log');
+      const idSede = selectorSede?.value;
+      const url = idSede ? `/api/Accesos/log?idSede=${idSede}` : '/api/Accesos/log';
+      const data = await apiFetch(url);
       const logs = normalizeArrayPayload(data);
       tbody.innerHTML = logs.map((acceso) => {
         const estado = acceso.resultado || (acceso.accesoPermitido === false ? 'RECHAZADO' : 'PERMITIDO');
@@ -582,6 +587,7 @@ function formatDate(value) {
 
     document.getElementById('filtrarAccesosBtn')?.addEventListener('click', async () => {
       await renderAccesos();
+      showMessage('Filtro de accesos aplicado', 'info');
     });
 
     await populateSelectors();
@@ -672,7 +678,7 @@ function formatDate(value) {
         const disciplina = resolveDisciplinaName(clase?.disciplina || clase?.nombreDisciplina || clase?.idDisciplina);
         const fecha = clase?.fechaClase || '';
         const hora = clase?.horaInicio || '';
-        const instructor = resolveInstructorName(clase?.idInstructor || clase?.instructor);
+        const instructor = clase?.nombreInstructor || clase?.instructorName || resolveInstructorName(clase?.idInstructor || clase?.instructor);
         return [disciplina, instructor, fecha, hora].filter(Boolean).join(' - ');
       });
     }
@@ -690,7 +696,7 @@ function formatDate(value) {
         const cupoLimite = Number(clase.cupoLimite || 0);
         const ocupacion = cupoLimite ? Math.min(100, Math.round((cuposUsados / cupoLimite) * 100)) : 0;
         const disciplinaLabel = resolveDisciplinaName(clase.disciplina || clase.nombreDisciplina || clase.idDisciplina);
-        const instructorLabel = resolveInstructorName(clase.idInstructor || clase.instructor);
+        const instructorLabel = clase.nombreInstructor || clase.instructorName || resolveInstructorName(clase.idInstructor || clase.instructor);
         return `
           <tr>
             <td>${clase.nombreClase || disciplinaLabel}</td>
