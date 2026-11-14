@@ -424,8 +424,22 @@ function formatDate(value) {
     const tbody = document.getElementById('cuotasTableBody');
     const form = document.getElementById('cobroForm');
     const socioSelect = document.getElementById('cobroSocio');
-    const cuotaSelect = document.getElementById('cobroIdCobro');
+    let cuotaSelect = document.getElementById('cobroIdCobro');
     if (!tbody) return;
+
+    if (form && cuotaSelect && cuotaSelect.tagName !== 'SELECT') {
+      cuotaSelect.remove();
+      cuotaSelect = null;
+    }
+
+    if (!cuotaSelect && form) {
+      const cuotaContainer = document.createElement('div');
+      cuotaContainer.className = 'col-12';
+      cuotaContainer.innerHTML = '<label class="form-label fw-semibold" for="cobroIdCobro">Cuota</label><select id="cobroIdCobro" class="form-select" required></select>';
+      const paymentField = document.getElementById('cobroFormaPago')?.closest('.col-md-6');
+      form.insertBefore(cuotaContainer, paymentField || null);
+      cuotaSelect = cuotaContainer.querySelector('#cobroIdCobro');
+    }
 
     const [formasPago, cuotas, socios] = await Promise.all([
       apiFetch('/api/FormasPago'),
@@ -471,12 +485,12 @@ function formatDate(value) {
       const idSocio = Number(socioSelect?.value || 0);
       const monto = Number(document.getElementById('cobroImporte')?.value || 0);
       const idFormaPago = Number(document.getElementById('cobroFormaPago')?.value || 0);
-      const payload = { idCobro, idSocio, monto, idFormaPago };
-      if (!payload.idCobro || !payload.idSocio || !payload.monto || !payload.idFormaPago) {
+      const payload = { idCobro, idFormaPago, importe: monto };
+      if (!idCobro || !idSocio || !payload.importe || !idFormaPago) {
         showMessage('Complete cuota, socio, monto y forma de pago.', 'error');
         return;
       }
-      const result = await apiFetch('/api/Cuotas/registrar-pago', { method: 'POST', body: JSON.stringify(payload) });
+      const result = await apiFetch('/api/Cuotas/cobrar', { method: 'POST', body: JSON.stringify(payload) });
       if (!result) {
         showMessage('No se pudo registrar el pago.', 'error');
         return;
@@ -796,7 +810,7 @@ function formatDate(value) {
             <td><span class="badge text-bg-${badgeClassByStatus(estado)}">${estado}</span></td>
           </tr>
         `;
-      }).join('') || '<tr><td colspan="5" class="text-center text-secondary py-4">Sin aptos m??dicos</td></tr>';
+      }).join('') || '<tr><td colspan="5" class="text-center text-secondary py-4">Sin aptos médicos</td></tr>';
     }
 
     form?.addEventListener('submit', async (event) => {
@@ -811,17 +825,17 @@ function formatDate(value) {
       };
 
       if (!payload.idSocio || !payload.medicoFirmante || !payload.matriculaMedico || !payload.fechaEmision || !payload.fechaVencimiento) {
-        showMessage('Complete todos los campos del apto m??dico.', 'error');
+        showMessage('Complete todos los campos del apto médico.', 'error');
         return;
       }
 
       const result = await apiFetch('/api/AptosMedicos', { method: 'POST', body: JSON.stringify(payload) });
       if (!result) {
-        showMessage('No se pudo guardar el apto m??dico.', 'error');
+        showMessage('No se pudo guardar el apto médico.', 'error');
         return;
       }
 
-      showMessage('Apto m??dico registrado correctamente.', 'success');
+      showMessage('Apto médico registrado correctamente.', 'success');
       form.reset();
       bootstrap.Modal.getInstance(document.getElementById('modalApto'))?.hide();
       await renderAptos();

@@ -979,6 +979,7 @@ namespace FITLIFENETWORKPROYECTO.Services
             {
                 IdCobro = c.IdCobro,
                 IdContrato = c.IdContrato,
+                IdSocio = c.IdContratoNavigation?.IdSocio ?? 0,
                 NumeroCuota = c.NumeroCuota,
                 Monto = c.Monto,
                 FechaVencimiento = c.FechaVencimiento,

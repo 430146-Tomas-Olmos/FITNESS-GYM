@@ -270,6 +270,7 @@ namespace FITLIFENETWORKPROYECTO.DTO
     {
         public int IdCobro { get; set; }
         public int IdContrato { get; set; }
+        public int IdSocio { get; set; }
         public int NumeroCuota { get; set; }
         public decimal Monto { get; set; }
         public DateOnly FechaVencimiento { get; set; }
