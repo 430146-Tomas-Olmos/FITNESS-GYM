@@ -31,6 +31,7 @@ public class UsuarioCreateRequestDto
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "ROLE_GERENTE_GENERAL")]
 public class UsuariosController : ControllerBase
 {
     private readonly FITLIFENETWORKDbContext _db;

@@ -59,7 +59,7 @@ function parseJwt(token) {
 
 function getRolesFromToken(token) {
     const payload = parseJwt(token);
-    const rolesClaim = payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+    const rolesClaim = payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || payload['role'];
 
     if (!rolesClaim) {
         return [];
@@ -184,7 +184,7 @@ function applyModuleSidebar() {
         const hasInicio = links.some((item) => (item.textContent || '').replace(/\s+/g, ' ').trim() === 'Inicio');
         if (!hasInicio) {
             const inicioLink = document.createElement('a');
-            inicioLink.href = 'inicio.html';
+            inicioLink.href = '/inicio.html';
             inicioLink.className = 'btn btn-dark text-start px-3 py-2 rounded-3 text-white-50';
             inicioLink.innerHTML = '<i class="bi bi-house-door me-2"></i>Inicio';
             nav.insertBefore(inicioLink, nav.firstChild);
@@ -236,20 +236,24 @@ function initDashboardPage() {
     }
 
     if (sidebarNav) {
+        // Los permisos salen de roleGuard.js (FitLifeAccess): una sola fuente de verdad.
+        const access = window.FitLifeAccess;
         const menuItems = [
-            { label: 'Dashboard', icon: 'bi-house-door', visible: roles.includes('ROLE_GERENTE_GENERAL') },
-            { label: 'Inicio', icon: 'bi-house-door', visible: true, href: 'inicio.html' },
-            { label: 'Socios', icon: 'bi-people', visible: roles.includes('ROLE_GERENTE_GENERAL') || roles.includes('ROLE_GERENTE_MIEMBROS') || roles.includes('ROLE_VENDEDOR') },
-            { label: 'Tienda', icon: 'bi-bag', visible: roles.includes('ROLE_GERENTE_GENERAL') || roles.includes('ROLE_GERENTE_VENTAS') || roles.includes('ROLE_VENDEDOR') },
-            { label: 'Equipamiento', icon: 'bi-tools', visible: roles.includes('ROLE_GERENTE_GENERAL') || roles.includes('ROLE_GERENTE_EQUIPAMIENTO') || roles.includes('ROLE_TECNICO') },
-            { label: 'Reportes', icon: 'bi-bar-chart-line', visible: roles.some((r) => r.startsWith('ROLE_GERENTE')), href: 'reportes-tpi.html' },
-            { label: 'Administración', icon: 'bi-sliders', visible: roles.includes('ROLE_GERENTE_GENERAL') || roles.includes('ROLE_ADMIN') }
-        ];
+            { label: 'Dashboard', icon: 'bi-speedometer2', href: 'dashboard.html' },
+            { label: 'Inicio', icon: 'bi-house-door', href: 'inicio.html' },
+            { label: 'Miembros', icon: 'bi-people', href: 'miembros.html' },
+            { label: 'Tienda', icon: 'bi-bag', href: 'tienda.html' },
+            { label: 'Equipamiento', icon: 'bi-tools', href: 'equipamiento.html' },
+            { label: 'Reportes', icon: 'bi-bar-chart-line', href: 'reportes-tpi.html' },
+            { label: 'Administración', icon: 'bi-sliders', href: 'administracion.html' }
+        ].map((item) => ({ ...item, visible: access ? access.can(item.href) : false }));
+
+        const currentPage = window.location.pathname.split('/').pop() || '';
 
         sidebarNav.innerHTML = menuItems
             .filter((item) => item.visible)
-            .map((item, index) => `
-                <a href="${item.href || '#'}" class="btn ${index === 0 ? 'btn-primary' : 'btn-dark text-white-50'} text-start px-3 py-2 rounded-3" type="button">
+            .map((item) => `
+                <a href="/${item.href}" class="btn ${item.href === currentPage ? 'btn-primary' : 'btn-dark text-white-50'} text-start px-3 py-2 rounded-3" type="button">
                     <i class="${item.icon} me-2"></i>${item.label}
                 </a>
             `)
